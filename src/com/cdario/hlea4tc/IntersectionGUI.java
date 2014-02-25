@@ -4,11 +4,17 @@
  */
 package com.cdario.hlea4tc;
 
+import jade.core.AID;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+
 /**
  *
  * @author cesar
  */
 public class IntersectionGUI extends javax.swing.JFrame {
+
+    private Intersection myIntersection;
 
     /**
      * Creates new form IntersectionGUI
@@ -26,49 +32,54 @@ public class IntersectionGUI extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        panel1 = new javax.swing.JPanel();
-        button1 = new javax.swing.JButton();
+        labelIntersection = new javax.swing.JLabel();
+        labelGreen = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        panel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        labelIntersection.setFont(new java.awt.Font("Tahoma", 1, 24)); // NOI18N
+        labelIntersection.setText("00");
 
-        javax.swing.GroupLayout panel1Layout = new javax.swing.GroupLayout(panel1);
-        panel1.setLayout(panel1Layout);
-        panel1Layout.setHorizontalGroup(
-            panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 74, Short.MAX_VALUE)
-        );
-        panel1Layout.setVerticalGroup(
-            panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 132, Short.MAX_VALUE)
-        );
-
-        button1.setText("jButton1");
+        labelGreen.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        labelGreen.setForeground(new java.awt.Color(0, 153, 102));
+        labelGreen.setText("00");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(panel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(button1, javax.swing.GroupLayout.PREFERRED_SIZE, 65, Short.MAX_VALUE)
-                .addContainerGap())
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(33, 33, 33)
+                        .addComponent(labelIntersection))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(77, 77, 77)
+                        .addComponent(labelGreen)))
+                .addContainerGap(76, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(button1, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(panel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(25, 25, 25)
+                .addComponent(labelIntersection)
+                .addGap(33, 33, 33)
+                .addComponent(labelGreen)
+                .addContainerGap(52, Short.MAX_VALUE))
         );
+
+        labelIntersection.getAccessibleContext().setAccessibleName("lableName");
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    IntersectionGUI(Intersection i) {
+        super(i.getLocalName());
+        myIntersection = i;
+         initComponents();
+        labelIntersection.setText(i.getLocalName());
+        labelGreen.setText("" + myIntersection.remainingGreen);
+    }
 
     /**
      * @param args the command line arguments
@@ -99,13 +110,31 @@ public class IntersectionGUI extends javax.swing.JFrame {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 new IntersectionGUI().setVisible(true);
             }
         });
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    public javax.swing.JButton button1;
-    public javax.swing.JPanel panel1;
+    private javax.swing.JLabel labelGreen;
+    private javax.swing.JLabel labelIntersection;
     // End of variables declaration//GEN-END:variables
+
+    public void showGui() {
+        pack();
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        int centerX = (int) screenSize.getWidth() / 2;
+        int centerY = (int) screenSize.getHeight() / 2;
+        setLocation(centerX - getWidth() / 2, centerY - getHeight() / 2);
+        super.setVisible(true);
+    }
+
+    @Override
+    public void repaint() {
+        labelGreen.setText("" + myIntersection.remainingGreen);
+        super.repaint(); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    
 }
