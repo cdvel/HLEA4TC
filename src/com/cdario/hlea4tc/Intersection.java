@@ -3,6 +3,7 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -13,6 +14,8 @@ import jade.lang.acl.MessageTemplate;
 import java.awt.Color;
 
 
+
+
 /**
  *
  * @author cdario
@@ -21,6 +24,8 @@ public class Intersection extends Agent {
     
     private IntersectionGUI interGUI;
     private AID[] availableSectors;
+    
+    private static int MIN_GREEN = 90;
         
     public double remainingGreen;
     private int currentPhaseIndex;
@@ -53,7 +58,7 @@ public class Intersection extends Agent {
             fe.printStackTrace();
         }
         
-        addBehaviour(new TickerBehaviour(this, AP_MIN) {
+        addBehaviour(new TickerBehaviour(this, 10000) {  // look for sectors every 10 secs?
             @Override
             protected void onTick() {
                 DFAgentDescription template =  new DFAgentDescription();
@@ -69,24 +74,12 @@ public class Intersection extends Agent {
                 } catch (FIPAException e) {
                     e.printStackTrace();
                 }
-                
-                
-                myAgent.addBehaviour(new RequestSectorRegistration());
+                                
+                myAgent.addBehaviour(new SectorReallocationRequester());
             }
         });
         
-        
-        addBehaviour(new TickerBehaviour(this, 1000) {
-            @Override
-            protected void onTick() {
-                if (remainingGreen == 0)
-                    remainingGreen = 100;
-                else
-                    remainingGreen  --;
-                
-                interGUI.repaint();
-            }
-        } );
+        addBehaviour(new GreenUpdater());
         
         addBehaviour(new ReportState2Sector());
         
@@ -105,6 +98,16 @@ public class Intersection extends Agent {
         System.out.println("intersection-agent "+getAID().getName()+" terminating.");
     }
     
+    
+    private class SectorReallocationRequester extends OneShotBehaviour{
+
+        @Override
+        public void action() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+        
+    }
+    
     private class ReportState2Sector extends CyclicBehaviour{
 
         @Override
@@ -116,22 +119,23 @@ public class Intersection extends Agent {
             msg.setContent(remainingGreen+"-sec left");
             send(msg);
         }
-     
+    }    
     
-    }
-    
-    
-    
-    private class RequestSectorRegistration extends Behaviour{
-        
-        private AID registeredSector;
-
+    private class GreenUpdater extends CyclicBehaviour{
         @Override
         public void action() {
-            
+            addBehaviour(new TickerBehaviour(myAgent, 1000) {
+                @Override
+                protected void onTick() {
+                    if (remainingGreen == 0)
+                        
+                    remainingGreen = MIN_GREEN;
+                else
+                    remainingGreen  --;
+                interGUI.repaint();
+                }
+            });
         }
-    
-        
     }
     
     
