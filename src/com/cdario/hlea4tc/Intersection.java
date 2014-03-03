@@ -13,6 +13,7 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import java.awt.Color;
+import java.util.Date;
 
 /**
  *
@@ -22,6 +23,7 @@ public class Intersection extends Agent {
 
     private IntersectionGUI interGUI;
     private AID[] availableSectors;
+    private AID mySector;
     private static int MIN_GREEN = 90;
     public double remainingGreen;
     private int currentPhaseIndex;
@@ -68,7 +70,8 @@ public class Intersection extends Agent {
                 } catch (FIPAException e) {
                     e.printStackTrace();
                 }
-                myAgent.addBehaviour(new SectorReallocationRequester());
+                //myAgent.addBehaviour(new SectorReallocationRequester(this));
+                myAgent.addBehaviour(new SectorManager(myAgent, 5000, new Date()));
             }
         });
 
@@ -87,17 +90,146 @@ public class Intersection extends Agent {
         interGUI.dispose();
         System.out.println("intersection-agent " + getAID().getName() + " terminating");
     }
+    
+    private class SectorManager extends TickerBehaviour
+    {
+        private long deadline, initTime, deltaT;
 
-    private class SectorReallocationRequester extends OneShotBehaviour {
+        public SectorManager(Agent a, long period, Date d) {
+            super(a, period);
+            deadline = d.getTime();
+            initTime = System.currentTimeMillis();
+            deltaT = deadline - initTime;
+        }
 
         @Override
-        public void action() {
-            System.out.println("reallocation requested");
+        protected void onTick() {
+            long currentTime = System.currentTimeMillis();
+            if (false){
+            //if (currentTime > deadline){  //TODO: check for deadlines
+                //deadline expired
+                System.out.println(myAgent.getAID()+ " deadline reached - did not join sector");
+                stop();
+            }
+            else
+            {
+                //negotiate
+                myAgent.addBehaviour(new SectorReallocationRequester(this));
+            }
         }
     }
 
+    private class SectorReallocationRequester extends Behaviour {
+
+        int step = 0;
+        private MessageTemplate mtemplate;
+        private AID mSector;
+        private int mSectorContribution;
+        private int repliesCount = 0;
+        private SectorManager manager;
+
+        public SectorReallocationRequester(SectorManager mng) {
+            super(null);
+            manager = mng;
+        }
+     
+        @Override
+        public void action() {
+            switch (step) {
+                case 0: //Call for proposal for all sectors
+                    ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
+                    for (int i = 0; i < availableSectors.length; i++) {
+                        cfp.addReceiver(availableSectors[i]);
+                    }
+                    cfp.setContent("intersection-state-info-and-id");
+                    cfp.setConversationId("request-join-sector");
+                    cfp.setReplyWith("join-cfp-" + System.currentTimeMillis()); //identifier
+                    //cfp.setReplyByDate(System.currentTimeMillis()+1000);
+                    cfp.setReplyByDate(new Date());
+                    myAgent.send(cfp);
+                    //proposal templates to come
+                    mtemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("request-join-sector"), MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+                    //mtemplate = MessageTemplate.and(mtemplate, MessageTemplate.MatchReplyByDate(new Date()));
+                    step = 1;
+                    break;
+
+                case 1: //receive all replies from sectors
+                    ACLMessage reply = myAgent.receive(mtemplate);
+                    if (reply != null) {
+                        if (reply.getPerformative() == ACLMessage.PROPOSE) {
+                            // requesting to join 
+                            int contribution = Integer.parseInt(reply.getContent());
+                            //TODO: maintan value and compare with other offers, keep the best next step
+                            if (mSector == null || contribution < mSectorContribution) {
+                                mSector = reply.getSender();
+                            }
+                            mSectorContribution = contribution;
+
+                        }
+                        repliesCount++;
+                        if (repliesCount >= availableSectors.length) {
+                             //TODO: define deadline
+                            step = 2; //received all, proceed
+                        }
+                    } else {
+                        block();
+                    }
+                    break;
+                
+                case 2: 
+                    if (mSector !=null) //TODO: more guards
+                    {
+                        // accept the offer from the chosen sector 
+                        ACLMessage acceptMessage = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+                        acceptMessage.addReceiver(mSector);
+                        acceptMessage.setContent("intersection-state-info-and-id");
+                        acceptMessage.setConversationId("request-join-sector");
+                        acceptMessage.setReplyWith("accept-cfp"+System.currentTimeMillis());
+                        myAgent.send(acceptMessage);
+                        //template
+                        mtemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("request-join-sector"), MessageTemplate.MatchInReplyTo(acceptMessage.getReplyWith())); 
+                        step = 3;
+                    }else{
+                        // no sector wants this intersection to join
+                        step = 4;
+                    }
+                    break;
+                    
+                case 3:
+                    // receive the reply when joining the sector
+                    reply = myAgent.receive(mtemplate);
+                    
+                    if(reply != null)
+                    {
+                        //received reply from join
+                        if(reply.getPerformative() == ACLMessage.INFORM)
+                        {
+                            //joining this sector, end
+                            System.out.println(myAgent.getAID()+" joined "+mSector);
+                            
+                            manager.stop();
+                        }
+                        step = 4;
+                    }else{
+                        block();
+                    }
+                    
+                    break;
+   
+            }
+
+           // System.out.println("reallocation requested");
+        }
+
+        @Override
+        public boolean done() {
+            return step == 4;
+        }
+    } // end of inner class SectorReallocation
+
     private class ReportState2Sector extends TickerBehaviour { // executed constantly 
-         public ReportState2Sector(Agent a, long period) {
+
+        public ReportState2Sector(Agent a, long period) {
             super(a, period);
         }
 
@@ -114,7 +246,7 @@ public class Intersection extends Agent {
     }
 
     private class GreenUpdater extends TickerBehaviour {
-        
+
         public GreenUpdater(Agent a, long period) {
             super(a, period);
         }
