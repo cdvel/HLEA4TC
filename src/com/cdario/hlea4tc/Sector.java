@@ -4,7 +4,6 @@ package com.cdario.hlea4tc;
  *
  * @author cdario
  */
-
 import com.sun.xml.internal.ws.api.server.ServiceDefinition;
 import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
@@ -15,18 +14,15 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import java.awt.Color;
 import java.awt.Component;
 
-public class Sector extends Agent{
-    
+public class Sector extends Agent {
+
     public int activeIntersection;
-    
     ACLMessage message;
     SectorGUI sectorGUI;
-    
-    
 
     @Override
     protected void setup() {
-        
+
         //register with DF
         DFAgentDescription dfad = new DFAgentDescription();
         dfad.setName(getAID());
@@ -39,7 +35,7 @@ public class Sector extends Agent{
         } catch (Exception fe) {
             fe.printStackTrace();
         }
-        
+
         sectorGUI = new SectorGUI();
         addBehaviour(new SectorStatus());
         sectorGUI.setVisible(true);
@@ -52,34 +48,31 @@ public class Sector extends Agent{
         } catch (Exception fe) {
             fe.printStackTrace();
         }
-        
+
         sectorGUI.dispose();
-        System.out.println("sector-agent "+getAID().getName()+" terminating.");
+        System.out.println("sector-agent " + getAID().getName() + " terminating.");
     }
-    
-    
-    
-    public class SectorStatus extends CyclicBehaviour{
+
+    public class SectorStatus extends CyclicBehaviour {
 
         @Override
         public void action() {
-            
+
             message = receive();
-            
-            if (message !=null)
-            {
+
+            if (message != null) {
                 sectorGUI.labelMsg.setForeground(Color.red);
                 /*
-                String current = sectorGUI.labelMsg.getText();
-                if (current.length() > 50) {
-                    sectorGUI.labelMsg.setText("");
-                }
-                sectorGUI.labelMsg.setText(current + "\n" + message.getSender().getLocalName() + " says " + message.getContent());
-                //*/
-                sectorGUI.labelMsg.setText(message.getSender().getLocalName()+" says "+message.getContent());
+                 String current = sectorGUI.labelMsg.getText();
+                 if (current.length() > 50) {
+                 sectorGUI.labelMsg.setText("");
+                 }
+                 sectorGUI.labelMsg.setText(current + "\n" + message.getSender().getLocalName() + " says " + message.getContent());
+                 //*/
+                sectorGUI.labelMsg.setText(message.getSender().getLocalName() + " says " + message.getContent());
                 message = null;
-            }else{
-                block();
+            } else {
+                block();    // good practice
             }
         }
     }
