@@ -3,8 +3,6 @@ package com.cdario.hlea4tc;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -12,8 +10,12 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import java.awt.Color;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Formatter;
+import java.util.Locale;
+
+
 
 /**
  *
@@ -41,6 +43,7 @@ public class Intersection extends Agent {
         interGUI.showGui();
         interGUI.setVisible(true);
 
+        
         //registering service
         DFAgentDescription dfa = new DFAgentDescription();
         dfa.setName(getAID());
@@ -54,29 +57,18 @@ public class Intersection extends Agent {
             fe.printStackTrace();
         }
 
-        addBehaviour(new TickerBehaviour(this, 10000) {  // look for sectors every 10 secs?
+        // update available sectors list every 5 secs
+        
+        addBehaviour(new TickerBehaviour(this, 5000) {  // look for sectors every 5 secs?
             @Override
             protected void onTick() {
-                DFAgentDescription template = new DFAgentDescription();
-                ServiceDescription sd = new ServiceDescription();
-                sd.setType("sector-registration");
-                template.addServices(sd);
-                try {
-                    DFAgentDescription[] res = DFService.search(myAgent, template);
-                    availableSectors = new AID[res.length];
-                    for (int i = 0; i < res.length; i++) {
-                        availableSectors[i] = res[i].getName();
-                    }
-                } catch (FIPAException e) {
-                    e.printStackTrace();
-                }
-                //myAgent.addBehaviour(new SectorReallocationRequester(this));
-                myAgent.addBehaviour(new SectorManager(myAgent, 5000, new Date()));
+                
             }
         });
-
+        
+        addBehaviour(new SectorManager(this, 20000, new Date())); // every 20s
         addBehaviour(new GreenUpdater(this, 1000));
-        addBehaviour(new ReportState2Sector(this, 2000));
+        addBehaviour(new SectorReporter(this, 2000));
         System.out.println("Agent " + this.getLocalName() + " online");
     }
 
@@ -104,18 +96,40 @@ public class Intersection extends Agent {
 
         @Override
         protected void onTick() {
+            
+            /******************************/
+            /*      update list of available sectors    */
+            /*******************************/
+            DFAgentDescription template = new DFAgentDescription();
+                ServiceDescription sd = new ServiceDescription();
+                sd.setType("sector-registration");
+                template.addServices(sd);
+                try {
+                    DFAgentDescription[] res = DFService.search(myAgent, template);
+                    availableSectors = new AID[res.length];
+                    for (int i = 0; i < res.length; i++) {
+                        availableSectors[i] = res[i].getName();
+                    }
+                } catch (FIPAException e) {
+                    e.printStackTrace();
+                }
+                System.out.println(timestamp() +" "+ availableSectors.length +"-known sectors");
+            /*
+             * end update
+             */
+            
             long currentTime = System.currentTimeMillis();
-            if (false){
-            //if (currentTime > deadline){  //TODO: check for deadlines
-                //deadline expired
-                System.out.println(myAgent.getAID()+ " deadline reached - did not join sector");
-                stop();
-            }
-            else
-            {
+//            if (false){
+//            //if (currentTime > deadline){  //TODO: check for deadlines
+//                //deadline expired
+//                System.out.println(myAgent.getAID()+ " deadline reached - did not join sector");
+//                stop();
+//            }
+//            else
+//            {
                 //negotiate
                 myAgent.addBehaviour(new SectorReallocationRequester(this));
-            }
+//            }
         }
     }
 
@@ -149,6 +163,7 @@ public class Intersection extends Agent {
                     myAgent.send(cfp);
                     //proposal templates to come
                     mtemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("request-join-sector"), MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+                    System.out.println(timestamp()+" action SEND CFP ALL SECTORS");
                     //mtemplate = MessageTemplate.and(mtemplate, MessageTemplate.MatchReplyByDate(new Date()));
                     step = 1;
                     break;
@@ -157,7 +172,7 @@ public class Intersection extends Agent {
                     ACLMessage reply = myAgent.receive(mtemplate);
                     if (reply != null) {
                         if (reply.getPerformative() == ACLMessage.PROPOSE) {
-                            // requesting to join 
+                            // requesting join 
                             int contribution = Integer.parseInt(reply.getContent());
                             //TODO: maintan value and compare with other offers, keep the best next step
                             if (mSector == null || contribution < mSectorContribution) {
@@ -171,9 +186,12 @@ public class Intersection extends Agent {
                              //TODO: define deadline
                             step = 2; //received all, proceed
                         }
+                        System.out.println(timestamp()+" action RECEIVE "+repliesCount +" PROPOSALS");
                     } else {
                         block();
                     }
+                    
+
                     break;
                 
                 case 2: 
@@ -193,6 +211,8 @@ public class Intersection extends Agent {
                         // no sector wants this intersection to join
                         step = 4;
                     }
+                    
+                    System.out.println(timestamp()+" action SEND ACCEPT OFFERS");
                     break;
                     
                 case 3:
@@ -209,16 +229,16 @@ public class Intersection extends Agent {
                             
                             manager.stop();
                         }
+                        System.out.println(timestamp()+" action RECEIVE CONFIRMATION");
                         step = 4;
                     }else{
                         block();
                     }
-                    
                     break;
    
             }
 
-           // System.out.println("reallocation requested");
+            //System.out.println(timestamp()+" Sector reallocation - step "+step);
         }
 
         @Override
@@ -227,21 +247,31 @@ public class Intersection extends Agent {
         }
     } // end of inner class SectorReallocation
 
-    private class ReportState2Sector extends TickerBehaviour { // executed constantly 
+    private class SectorReporter extends TickerBehaviour { // executed constantly 
 
-        public ReportState2Sector(Agent a, long period) {
+        public SectorReporter(Agent a, long period) {
             super(a, period);
         }
 
         @Override
         protected void onTick() {
-            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-            msg.addReceiver(new AID("Sector1", AID.ISLOCALNAME));// TODO
-            msg.setLanguage("EN");
-            msg.setOntology("Traffic-control-ontology");
-            msg.setContent(remainingGreen + "-sec left");
-            send(msg);
-            System.out.println("reporting");
+            
+            if (availableSectors != null)
+            {
+                ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                for (int i=0; i<availableSectors.length; i++)
+                {
+                    msg.addReceiver(availableSectors[i]);
+                    //msg.addReceiver(new AID("Sector1", AID.ISLOCALNAME));// TODO
+                }
+
+                msg.setLanguage("EN");
+                msg.setOntology("Traffic-control-ontology");
+                msg.setContent(remainingGreen + "-sec left");
+
+                send(msg);
+                System.out.println("reporting");
+            }
         }
     }
 
@@ -261,4 +291,14 @@ public class Intersection extends Agent {
             interGUI.repaint();
         }
     }
+
+String timestamp()
+{
+    Date d = new Date();
+    StringBuilder sb = new StringBuilder();
+    Formatter format = new Formatter(sb, Locale.ENGLISH);
+    format.format("%tT ",Calendar.getInstance() );
+    return sb.toString();
+}
 }// end of outter Class
+

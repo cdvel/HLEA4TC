@@ -61,15 +61,36 @@ public class Sector extends Agent {
             message = receive();
 
             if (message != null) {
-                sectorGUI.labelMsg.setForeground(Color.red);
-                /*
-                 String current = sectorGUI.labelMsg.getText();
-                 if (current.length() > 50) {
-                 sectorGUI.labelMsg.setText("");
-                 }
-                 sectorGUI.labelMsg.setText(current + "\n" + message.getSender().getLocalName() + " says " + message.getContent());
-                 //*/
-                sectorGUI.labelMsg.setText(message.getSender().getLocalName() + " says " + message.getContent());
+                
+                if(message.getPerformative() == ACLMessage.INFORM)
+                {
+                    sectorGUI.labelMsg.setForeground(Color.red); // display
+                    sectorGUI.labelMsg.setText(message.getSender().getLocalName() + " says " + message.getContent());
+                    //System.out.println("Sector INFORMED");
+                }
+                else
+                {
+                    ACLMessage reply = message.createReply();
+
+                    if (message.getPerformative() == ACLMessage.CFP)  // intersection requests join sector
+                    {
+                        //TODO: Default action accept all requests!
+                        reply.setPerformative(ACLMessage.PROPOSE);
+                        int contribution = 10; //TODO: compute
+                        reply.setContent(""+contribution);
+                        //System.out.println("Sector PROPOSED");
+                    }else
+                    {
+                        if (message.getPerformative() == ACLMessage.ACCEPT_PROPOSAL)
+                        {
+                            reply.setPerformative(ACLMessage.CONFIRM);
+                            reply.setContent("OK");
+                            //System.out.println("Sector ACCEPTED");
+                        }
+                    }
+                    myAgent.send(reply);
+                }
+
                 message = null;
             } else {
                 block();    // good practice
