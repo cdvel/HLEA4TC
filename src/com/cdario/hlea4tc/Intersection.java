@@ -175,7 +175,7 @@ public class Intersection extends Agent {
                             // requesting join 
                             int contribution = Integer.parseInt(reply.getContent());
                             //TODO: maintan value and compare with other offers, keep the best next step
-                            if (mSector == null || contribution < mSectorContribution) {
+                            if (mSector == null || contribution < mSectorContribution) { 
                                 mSector = reply.getSender();
                             }
                             mSectorContribution = contribution;
