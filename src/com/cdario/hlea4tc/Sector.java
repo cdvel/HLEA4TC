@@ -4,7 +4,6 @@ package com.cdario.hlea4tc;
  *
  * @author cdario
  */
-import com.sun.xml.internal.ws.api.server.ServiceDefinition;
 import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
 import jade.core.behaviours.CyclicBehaviour;
@@ -12,7 +11,7 @@ import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import java.awt.Color;
-import java.awt.Component;
+
 
 public class Sector extends Agent {
 

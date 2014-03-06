@@ -69,7 +69,7 @@ public class Intersection extends Agent {
         addBehaviour(new SectorManager(this, 20000, new Date())); // every 20s
         addBehaviour(new GreenUpdater(this, 1000));
         addBehaviour(new SectorReporter(this, 2000));
-        System.out.println("Agent " + this.getLocalName() + " online");
+        System.out.println("I-Agent " + this.getLocalName() + " online");
     }
 
     @Override
@@ -113,7 +113,7 @@ public class Intersection extends Agent {
                 } catch (FIPAException e) {
                     e.printStackTrace();
                 }
-                System.out.println(timestamp() +" "+ availableSectors.length +"-known sectors");
+                System.out.println(timestamp()+" ["+myAgent.getAID().getLocalName()+"] knows"+ availableSectors.length +" sectors");
             /*
              * end update
              */
@@ -163,7 +163,7 @@ public class Intersection extends Agent {
                     myAgent.send(cfp);
                     //proposal templates to come
                     mtemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("request-join-sector"), MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-                    System.out.println(timestamp()+" action SEND CFP ALL SECTORS");
+                    System.out.println(timestamp()+" ["+myAgent.getAID().getLocalName()+"] action SEND CFP ALL SECTORS");
                     //mtemplate = MessageTemplate.and(mtemplate, MessageTemplate.MatchReplyByDate(new Date()));
                     step = 1;
                     break;
@@ -186,7 +186,7 @@ public class Intersection extends Agent {
                              //TODO: define deadline
                             step = 2; //received all, proceed
                         }
-                        System.out.println(timestamp()+" action RECEIVE "+repliesCount +" PROPOSALS");
+                        System.out.println(timestamp()+" ["+myAgent.getAID().getLocalName()+"] action RECEIVE "+repliesCount +" PROPOSALS");
                     } else {
                         block();
                     }
@@ -212,7 +212,7 @@ public class Intersection extends Agent {
                         step = 4;
                     }
                     
-                    System.out.println(timestamp()+" action SEND ACCEPT OFFERS");
+                    System.out.println(timestamp()+" ["+myAgent.getAID().getLocalName()+"] action SEND ACCEPT OFFERS");
                     break;
                     
                 case 3:
@@ -229,7 +229,7 @@ public class Intersection extends Agent {
                             
                             manager.stop();
                         }
-                        System.out.println(timestamp()+" action RECEIVE CONFIRMATION");
+                        System.out.println(timestamp()+" ["+myAgent.getAID().getLocalName()+"] action RECEIVE CONFIRMATION");
                         step = 4;
                     }else{
                         block();
@@ -270,7 +270,7 @@ public class Intersection extends Agent {
                 msg.setContent(remainingGreen + "-sec left");
 
                 send(msg);
-                System.out.println("reporting");
+                System.out.println(timestamp()+" ["+myAgent.getAID().getLocalName()+"] is reporting");
             }
         }
     }
