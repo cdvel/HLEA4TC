@@ -157,7 +157,7 @@ public class Intersection extends Agent {
                     }
                     cfp.setContent("intersection-state-info-and-id");
                     cfp.setConversationId("request-join-sector");
-                    cfp.setReplyWith("join-cfp-" + System.currentTimeMillis()); //identifier
+                    cfp.setReplyWith("join-cfp-" + System.currentTimeMillis()); //i dentifier
                     //cfp.setReplyByDate(System.currentTimeMillis()+1000);
                     cfp.setReplyByDate(new Date());
                     myAgent.send(cfp);
