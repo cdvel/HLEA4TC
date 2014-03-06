@@ -171,7 +171,7 @@ public class Intersection extends Agent {
                 case 1: //receive all replies from sectors
                     ACLMessage reply = myAgent.receive(mtemplate);
                     if (reply != null) {
-                        if (reply.getPerformative() == ACLMessage.PROPOSE) {
+                        if (reply.getPerformative() == ACLMessage.PROPOSE) { 
                             // requesting join 
                             int contribution = Integer.parseInt(reply.getContent());
                             //TODO: maintan value and compare with other offers, keep the best next step
