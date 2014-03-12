@@ -1,4 +1,4 @@
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.contractnet1;
 
 /**
  *

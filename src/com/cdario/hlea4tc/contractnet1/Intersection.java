@@ -1,4 +1,4 @@
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.contractnet1;
 
 import jade.core.AID;
 import jade.core.Agent;
@@ -10,10 +10,13 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.proto.SubscriptionInitiator;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.Locale;
+import java.util.Vector;
 
 
 
@@ -81,6 +84,75 @@ public class Intersection extends Agent {
         }
         interGUI.dispose();
         System.out.println("intersection-agent " + getAID().getName() + " terminating");
+    }
+    
+    private class SectorSubscriber extends SubscriptionInitiator{
+        
+        private int currentVolume;
+        private float ratio;
+        private SectorManager manager;
+        
+
+        public SectorSubscriber(int vol, float rto, SectorManager man) {
+            super(null, null);
+            currentVolume = vol;
+            ratio = rto;
+            manager = man;
+        }
+        
+        
+        /* CFP message unknown at construction time or
+         * need to send customized messages to each responder
+        */
+        protected ArrayList prepareCFPs(ACLMessage cfp)
+        {
+            cfp = new ACLMessage(ACLMessage.CFP);
+            cfp.setContent(currentVolume+","+ratio);
+            
+            for (int i=0; i < availableSectors.length; ++i)
+            {
+                cfp.addReceiver(availableSectors[i]);
+            }
+            //TODO: consider replacing VECTOR
+            //http://stackoverflow.com/questions/1386275/why-is-java-vector-class-considered-obsolete-or-deprecated
+            ArrayList v = new ArrayList();
+            v.add(cfp);
+            return  v;
+        }
+        
+        protected void handleAllResponses(ArrayList responses, ArrayList acceptances)
+        {
+            ACLMessage bestResponse = null;
+            int bestContribution = -1;
+            for (int i=0; i<responses.size();++i)
+            {
+                ACLMessage rsp = (ACLMessage) responses.get(i);
+                if (rsp.getPerformative() == ACLMessage.PROPOSE){
+                    int contribution = Integer.parseInt(rsp.getContent());
+                    if (bestResponse == null  || contribution < bestContribution){
+                        bestResponse = rsp;
+                        bestContribution = contribution;
+                    }
+                    
+                }
+            }
+             if (bestResponse != null){
+                 ACLMessage accept = bestResponse.createReply();
+                 accept.setContent(currentVolume+","+ratio);
+                 acceptances.add(accept);
+                 
+             }
+        }
+        
+        protected void handleInform(ACLMessage inform)
+        {
+            //completed
+            int contribution = Integer.parseInt(inform.getContent());
+            System.out.println("informed "+ contribution);
+            manager.stop();
+        }
+        
+    
     }
     
     private class SectorManager extends TickerBehaviour
