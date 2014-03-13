@@ -1,8 +1,10 @@
 package com.cdario.hlea4tc;
 
+import com.cdario.hlea4tc.contractnet1.Intersection;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
+import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -30,22 +32,37 @@ public class JunctionAgent extends Agent {
     protected String junctionID;
     protected AID mySector;
     protected AID[] knownSectors;
+    private Agent self;
 
     @Override
     protected void setup() {
 
         // Read names of responders as arguments
         //Object[] args = getArguments();
-        //TODO: Get responder-sectors names from Directory        
+        //TODO: Get responder-sectors names from Directory  
 
+        knownSectors = null;
         junctionID = getLocalName();
-        addBehaviour(new SectorManager(this, 20000, new Date())); // every 20s
-        if (knownSectors.length > 0) {
-            addBehaviour(new JunctionSubscriptionInit(this));
-        } else {
-            System.out.println("No responder specified.");
-        }
+        self = this;
+        addBehaviour(new SectorManager(this, 5000, new Date())); // every 5s
 
+        addBehaviour(new WakerBehaviour(self, 10000) {
+            @Override
+            protected void onWake() {
+                if (knownSectors != null && knownSectors.length > 0) {
+                    addBehaviour(new JunctionSubscriptionInit(self));
+                } else {
+                    System.out.println("No responder specified.");
+                }
+            }
+        });
+
+//        addBehaviour(new TickerBehaviour(this, 10000) {
+//            @Override
+//            protected void onTick() {
+//                
+//            }
+//        });
     }
 
     class JunctionSubscriptionInit extends SubscriptionInitiator {
@@ -53,7 +70,7 @@ public class JunctionAgent extends Agent {
         JunctionSubscriptionInit(Agent agent) {
             super(agent, new ACLMessage(ACLMessage.SUBSCRIBE));
         }
-        
+
         /*  Vector is deprecated, but JADE API requires it    */
         @Override
         protected Vector<ACLMessage> prepareSubscriptions(ACLMessage subscription) {
@@ -61,7 +78,7 @@ public class JunctionAgent extends Agent {
             for (int i = 0; i < knownSectors.length; ++i) {
                 subscription.addReceiver(knownSectors[i]);   // the agent supplying a subscription service (has a responder role)
             }
-            System.out.println("Requesting subscription to " + knownSectors.length + " responders.");
+            System.out.println("Junction "+myAgent.getLocalName()+": Requesting subscription to " + knownSectors.length + " responders.");
 
             subscription.setContent("subscription-request");   // the subscription content
             subscription.setReplyByDate(new Date(System.currentTimeMillis() + 10000));
@@ -72,27 +89,27 @@ public class JunctionAgent extends Agent {
 
         @Override
         protected void handleRefuse(ACLMessage refuse) {
-            System.out.println("Agent " + refuse.getSender().getName() + " refused " + getLocalName() + "'s subscription");
+            System.out.println("Junction "+myAgent.getLocalName()+"Sector " + refuse.getSender().getLocalName() + " refused " + getLocalName() + "'s subscription");
         }
 
         @Override
         protected void handleAgree(ACLMessage agree) {
-            System.out.println("Agent " + agree.getSender().getName() + " agreed to " + getLocalName() + "'s subscription");
+            mySector = agree.getSender();
+            System.out.println("Junction "+myAgent.getLocalName()+"Sector " + agree.getSender().getLocalName() + " agreed to " + getLocalName() + "'s subscription");
         }
 
         @Override
         protected void handleInform(ACLMessage inform) {
-            System.out.println("Agent " + inform.getSender().getName() + " successfully performed the requested action with " + inform.getContent());
+            System.out.println("Junction "+myAgent.getLocalName()+"Sector " + inform.getSender().getLocalName() + " informs that: " + inform.getContent());
         }
 
         @Override
         protected void handleFailure(ACLMessage failure) {
             if (failure.getSender().equals(myAgent.getAMS())) {
-                // FAILURE notification from the JADE runtime: the receiver
-                // does not exist
+                // FAILURE notification from the JADE runtime: the receiver does not exist
                 System.out.println("Responder does not exist");
             } else {
-                System.out.println("Agent " + failure.getSender().getName() + " failed to perform the requested action");
+                System.out.println("Junction "+myAgent.getLocalName()+"Sector " + failure.getSender().getLocalName() + " failed to perform the requested action");
             }
         }
 
@@ -119,7 +136,6 @@ public class JunctionAgent extends Agent {
         protected void onTick() {
 
             /*  update list of available sectors */
-
             DFAgentDescription template = new DFAgentDescription();
             ServiceDescription sd = new ServiceDescription();
             sd.setType("sector-registration");
@@ -133,7 +149,7 @@ public class JunctionAgent extends Agent {
             } catch (FIPAException e) {
                 e.printStackTrace();
             }
-            System.out.println(timestamp() + " [" + myAgent.getAID().getLocalName() + "] knows" + knownSectors.length + " sectors");
+            //System.out.println(timestamp() + " [" + myAgent.getAID().getLocalName() + "] knows " + knownSectors.length + " sector(s)");
 
         }
     }
