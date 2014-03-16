@@ -22,13 +22,14 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.proto.ContractNetInitiator;
 import jade.proto.ContractNetResponder;
-import jade.proto.SSContractNetResponder;
 import jade.proto.SubscriptionInitiator;
-
 import jade.proto.SubscriptionResponder;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.Formatter;
+import java.util.Locale;
 import java.util.Vector;
 
 /**
@@ -77,9 +78,10 @@ public class SectorAgent extends Agent {
                            //System.out.println("IF != " + dfds[i].getName()+" - "+ myAgent.getAID());
                            //knownSectors[i] = dfds[i].getName();
                            knownSectors.add(dfds[i].getName());
+                           
                        }
                    }
-                    System.out.println("Sector " + getLocalName() + ": "+knownSectors.size()+" sector(s) known");
+                    System.out.println( getLocalName() + ": "+knownSectors.size()+" sector(s) known");
 		}
 		catch (FIPAException fe) {
 		  fe.printStackTrace();
@@ -103,13 +105,13 @@ public class SectorAgent extends Agent {
         } catch (Exception fe) {
             fe.printStackTrace();
         }
-        
        
         /*
          *      Behaviour: respond to subscriptions and inform every 5 seconds
          */
         
-        System.out.println("Agent " + getLocalName() + " waiting for subscription requests...");
+        System.out.println(getLocalName() + " waiting for subscription requests...");
+        //SubscriptionResponder.SubscriptionManager manager = new SubscriptionResponder(this, null).
         responder = new SectorSubscriptionResp(this);
         addBehaviour(responder);
 
@@ -117,8 +119,13 @@ public class SectorAgent extends Agent {
             @Override
             protected void onTick() {
                 ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
-                inform.setContent("all OK");
+//                AID senderID = ((SubscriptionResponder.Subscription) responder.getSubscriptions().get(0)).getMessage().getSender();
+               
+                inform.setContent(timestamp()+" adjust x secs ("+responder.getSubscriptions().size()+")");
+                //if (responder.getSubscriptions().size()>0)
+                //inform.setContent(timestamp()+" == "+((SubscriptionResponder.Subscription)responder.getSubscriptions().get(0)).getMessage().getSender());
                 //TODO: content is junction-specific?
+                
                 responder.notifyJunctions(inform);
             }
         });
@@ -143,7 +150,7 @@ public class SectorAgent extends Agent {
 
             msgCFP.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
             msgCFP.setReplyByDate(new Date(System.currentTimeMillis() + 10000)); // We want to receive a reply in 10 secs
-            msgCFP.setContent("negotiate-");    //TODO: intersection ID and contribution here?
+            msgCFP.setContent("sector-negotiation");    //TODO: intersection ID and contribution here?
 
             negotiatorInit = new SectorJunctionNegotiatorInit(myAgent, msgCFP);
             negotiatorResp = new SectorJunctionNegotiatorResp(myAgent, contractTemplate);
@@ -158,6 +165,7 @@ public class SectorAgent extends Agent {
     class SectorSubscriptionResp extends SubscriptionResponder {
 
         //TODO: check other constructor with SubscriptionManager
+        
         SectorSubscriptionResp(Agent a) {
             super(a, MessageTemplate.and(
                     MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE),
@@ -165,24 +173,41 @@ public class SectorAgent extends Agent {
                     MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_SUBSCRIBE)));
         }
 
+        // USE to nest?
+        //        @Override
+        //        public void registerHandleSubscription(Behaviour b) {
+        //            super.registerHandleSubscription(b); //To change body of generated methods, choose Tools | Templates.
+        //        }
         @Override
-        protected ACLMessage handleSubscription(ACLMessage subscription) throws RefuseException {
-            // handle a subscription request
-
-            createSubscription(subscription);
-
-            System.out.println("Sector " + getLocalName() + ": SUBSCRIPTION received from " + subscription.getSender().getLocalName() + ". Action is " + subscription.getContent());
-
-            ACLMessage reply = subscription.createReply();
+        protected ACLMessage handleCancel(ACLMessage cancel) throws FailureException {
+            
+            System.out.println(getLocalName()+" : Canceling subscription from "+cancel.getSender().getLocalName());
+            Subscription subsc = getSubscription(cancel);
+ //           if (subsc!=null)    //TODO: subscription 
+//                this.mySubscriptionManager.deregister(subsc);
+            //return cancel;
+            return null;
+            //return super.handleCancel(cancel); //To change body of generated methods, choose Tools | Templates.
+        }
+        
+        @Override
+        protected ACLMessage handleSubscription(ACLMessage subscriptionMsg) throws RefuseException {
+            // handle a subscriptionMsg request
+      
+            System.out.println(getLocalName() + ": Received subscription request from " + subscriptionMsg.getSender().getLocalName() + " [" + subscriptionMsg.getContent()+"]");
+            ACLMessage reply = subscriptionMsg.createReply();
 
             // if successful, should answer (return) with AGREE; otherwise with REFUSE or NOT_UNDERSTOOD
             //TODO: implemend return for not-understood
 
-            if (junctionFits(subscription)) {
+            if (junctionFits(subscriptionMsg)) {
                 /* negotiate (Contract Net) with other sectors here */
-                if (junctionAwarded(subscription)) {
+                if (junctionAwarded(subscriptionMsg)) {
                     // We agree to perform the action. 
-                    System.out.println("Sector " + getLocalName() + ": Agree");
+                     Vector previousSub = getSubscriptions(subscriptionMsg.getSender());   // 
+                     if (previousSub.size()==0) // one subscriptionMsg per junction
+                        createSubscription(subscriptionMsg);
+                    System.out.println(getLocalName() + ": AGREED subscription request from " + subscriptionMsg.getSender().getLocalName() + " [" + subscriptionMsg.getContent()+"]");
                     reply.setPerformative(ACLMessage.AGREE);
 
                 } else {
@@ -190,9 +215,8 @@ public class SectorAgent extends Agent {
                 }
             } else {
                 // We refuse to perform the action
-                System.out.println("Sector " + getLocalName() + ": Refuse");
+                System.out.println(getLocalName() + ": REFUSED subscription request from " + subscriptionMsg.getSender().getLocalName() + " [" + subscriptionMsg.getContent()+"]");
                 reply.setPerformative(ACLMessage.REFUSE);
-
             }
             return reply;
             // notifyJunctions(subscription_msg);
@@ -262,12 +286,13 @@ public class SectorAgent extends Agent {
 
         @Override
         protected void handlePropose(ACLMessage propose, Vector acceptances) {
-            System.out.println("Sector: Agent " + propose.getSender().getLocalName() + " proposed " + propose.getContent());
+            
+ //           System.out.println("Sector: Agent " + propose.getSender().getLocalName() + " proposed " + propose.getContent());
         }
 
         @Override
         protected void handleRefuse(ACLMessage refuse) {
-            System.out.println("Sector: Agent " + refuse.getSender().getLocalName() + " refused");
+ //           System.out.println("Sector: Agent " + refuse.getSender().getLocalName() + " refused");
         }
 
         @Override
@@ -277,7 +302,7 @@ public class SectorAgent extends Agent {
                 // does not exist
                 System.out.println("Responder does not exist");
             } else {
-                System.out.println("Sector: Agent " + failure.getSender().getLocalName()+ " failed");
+                System.out.println(getLocalName()+" : Failed subscription from "+failure.getSender().getLocalName());
             }
             // Immediate failure --> we will not receive a response from this agent
             //	nResponders--;
@@ -287,7 +312,7 @@ public class SectorAgent extends Agent {
         protected void handleAllResponses(Vector responses, Vector acceptances) {
             if (responses.size() < knownSectors.size()) {
                 // Some responder didn't reply within the specified timeout
-                System.out.println("Timeout expired: missing " + (knownSectors.size() - responses.size()) + " responses");
+                System.out.println(getLocalName()+" : Timeout expired: missing " + (knownSectors.size() - responses.size()) + " responses");
             }
             // Evaluate proposals.
             int bestProposal = -1;
@@ -310,14 +335,14 @@ public class SectorAgent extends Agent {
             }
             // Accept the proposal of the best proposer
             if (accept != null) {
-                System.out.println("Sector "+myAgent.getLocalName()+": Accepting proposal " + bestProposal + " from responder " + bestProposer.getLocalName());
+ //               System.out.println("Sector "+myAgent.getLocalName()+": Accepting proposal " + bestProposal + " from responder " + bestProposer.getLocalName());
                 accept.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
             }
         }
 
         @Override
         protected void handleInform(ACLMessage inform) {
-            System.out.println("Agent " + inform.getSender().getLocalName() + " successfully performed the requested action");
+ //           System.out.println("Agent " + inform.getSender().getLocalName() + " successfully performed the requested action");
         }
     }
 
@@ -329,38 +354,38 @@ public class SectorAgent extends Agent {
 
         @Override
         protected ACLMessage prepareResponse(ACLMessage cfp) throws NotUnderstoodException, RefuseException {
-            System.out.println("Sector " + getLocalName() + ": CFP received from " + cfp.getSender().getLocalName()+ ". Action is " + cfp.getContent());
+            System.out.println(getLocalName() + " : CFP received from " + cfp.getSender().getLocalName()+ " [" + cfp.getContent()+"]");
             int proposal = evaluateAction();
             if (proposal > 2) {
                 // We provide a proposal
-                System.out.println("Sector " + getLocalName() + ": Proposing " + proposal);
+//                System.out.println("Sector " + getLocalName() + ": Proposing " + proposal);
                 ACLMessage propose = cfp.createReply();
                 propose.setPerformative(ACLMessage.PROPOSE);
                 propose.setContent(String.valueOf(proposal));
                 return propose;
             } else {
                 // We refuse to provide a proposal
-                System.out.println("Sector " + getLocalName() + ": Refuse");
+//                System.out.println("Sector " + getLocalName() + ": Refuse");
                 throw new RefuseException("evaluation-failed");
             }
         }
 
         @Override
         protected ACLMessage prepareResultNotification(ACLMessage cfp, ACLMessage propose, ACLMessage accept) throws FailureException {
-            System.out.println("Sector " + getLocalName() + ": Proposal accepted");
+            System.out.println(getLocalName() + " : Proposal accepted");
             if (performAction()) {
-                System.out.println("Sector " + getLocalName() + ": Action successfully performed");
+                System.out.println(getLocalName() + ": Action successfully performed");
                 ACLMessage inform = accept.createReply();
                 inform.setPerformative(ACLMessage.INFORM);
                 return inform;
             } else {
-                System.out.println("Sector " + getLocalName() + ": Action execution failed");
+                System.out.println(getLocalName() + ": Action execution failed");
                 throw new FailureException("unexpected-error");
             }
         }
 
         protected void handleRejectProposal(ACLMessage reject) {
-            System.out.println("Sector " + getLocalName() + ": Proposal rejected");
+ //           System.out.println("Sector " + getLocalName() + ": Proposal rejected");
         }
 
        private int evaluateAction() {
@@ -412,4 +437,10 @@ public class SectorAgent extends Agent {
 //        }
 //    }
 
+     String timestamp() {
+        StringBuilder sb = new StringBuilder();
+        Formatter format = new Formatter(sb, Locale.ENGLISH);
+        format.format("%tT ", Calendar.getInstance());
+        return sb.toString();
+    }
 }
