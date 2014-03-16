@@ -7,6 +7,7 @@ package com.cdario.hlea4tc;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
@@ -152,8 +153,6 @@ public class SectorAgent extends Agent {
                 
             }
         });
-        
-
     }
 
     class SectorSubscriptionResp extends SubscriptionResponder {
@@ -179,9 +178,9 @@ public class SectorAgent extends Agent {
             // if successful, should answer (return) with AGREE; otherwise with REFUSE or NOT_UNDERSTOOD
             //TODO: implemend return for not-understood
 
-            if (doSuscribe(subscription)) {
+            if (junctionFits(subscription)) {
                 /* negotiate (Contract Net) with other sectors here */
-                if (isSubscriptionConfirmed(subscription)) {
+                if (junctionAwarded(subscription)) {
                     // We agree to perform the action. 
                     System.out.println("Sector " + getLocalName() + ": Agree");
                     reply.setPerformative(ACLMessage.AGREE);
@@ -210,12 +209,47 @@ public class SectorAgent extends Agent {
             }
         }
 
-        private boolean doSuscribe(ACLMessage subscription) {
+        private boolean junctionFits(ACLMessage subscription) {
             //TODO: evaluate subscription and decide wheter you want it
+            /*
+             * Decide initially by checking several factors such as:
+             * 
+             * 1. current no. of subscribe junctions
+             * 2. how does the new junction fit with others, similar traff
+             *    density? volume? contribution?
+             *  
+             */
             return (Math.random() > 0.5);
         }
 
-        private boolean isSubscriptionConfirmed(ACLMessage subscription) {
+        private boolean junctionAwarded(final ACLMessage subscription) {
+            
+            //TODO: run OneShot nested with ContractNetInit against all known Sectors
+            /*
+             * Here starts negotiation with other junctions
+             * 
+             */
+            addBehaviour(new OneShotBehaviour(myAgent) {
+                
+                @Override
+                public void action() {
+                    /*
+                     * send CFPs to ll known sectors
+                     */
+                    ACLMessage msgCFP = new ACLMessage(ACLMessage.CFP);
+                    for (int i = 0; i < knownSectors.size(); ++i) {
+                        msgCFP.addReceiver(new AID((String) knownSectors.get(i).getLocalName(), AID.ISLOCALNAME));
+                    }
+
+                    msgCFP.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
+                    msgCFP.setReplyByDate(new Date(System.currentTimeMillis() + 5000)); // We want to receive a reply in 5 secs
+                    msgCFP.setContent(subscription.getContent());    //TODO: intersection ID and contribution here? POJO?
+
+                    //negotiatorInit = new SectorJunctionNegotiatorInit(myAgent, msgCFP);
+                    addBehaviour(new SectorJunctionNegotiatorInit(myAgent, msgCFP));
+                }
+            });
+  
             return (Math.random() > 0.5);
         }
     }

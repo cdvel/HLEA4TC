@@ -77,12 +77,12 @@ public class JunctionAgent extends Agent {
         
         
         /*
-         * attempt subscribe one 10 seconds after creation
+         * attempt subscribe every 5 seconds
          */
-              
-        addBehaviour(new WakerBehaviour(this, 10000) {
+        
+        addBehaviour(new TickerBehaviour(this, 5000) {
             @Override
-            protected void onWake() {
+            protected void onTick() {
                 if (knownSectors != null && knownSectors.size() > 0) {
                     addBehaviour(new JunctionSubscriptionInit(myAgent));
                 } else {
@@ -90,6 +90,20 @@ public class JunctionAgent extends Agent {
                 }
             }
         });
+              
+           /*
+         * attempt subscribe one 10 seconds after creation
+         */
+//        addBehaviour(new WakerBehaviour(this, 10000) {
+//            @Override
+//            protected void onWake() {
+//                if (knownSectors != null && knownSectors.size() > 0) {
+//                    addBehaviour(new JunctionSubscriptionInit(myAgent));
+//                } else {
+//                    System.out.println("No responder specified.");
+//                }
+//            }
+//        });
 
 //        addBehaviour(new TickerBehaviour(this, 10000) {
 //            @Override
