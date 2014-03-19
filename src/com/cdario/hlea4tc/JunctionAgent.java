@@ -83,12 +83,12 @@ public class JunctionAgent extends Agent {
 
     class JunctionSubscriptionInit extends SubscriptionInitiator {
 
-        JunctionSubscriptionInit(Agent agent) {
+        JunctionSubscriptionInit(Agent agent) { 
             super(agent, new ACLMessage(ACLMessage.SUBSCRIBE));
         }
 
         /*  Vector is deprecated, but JADE API requires it    */
-        @Override
+        @Override 
         protected Vector<ACLMessage> prepareSubscriptions(ACLMessage subscription) {
             subscription.setProtocol(FIPANames.InteractionProtocol.FIPA_SUBSCRIBE);
             //subscription.setConversationId("sector-subscription");
