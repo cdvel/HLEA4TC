@@ -47,16 +47,21 @@ public class SectorAgent extends Agent {
     protected void setup() {
 
         knownSectors = new ArrayList<AID>();
-
+        System.out.println("[S] " + getLocalName() + "\t + is up and waiting for subscriptions...");
+        
         /*
+         *      Register with DF and subscribe to sector-resgistration
          *      Behaviour: update known by subscribing to DF
          */
 
-        DFAgentDescription template = new DFAgentDescription();
+        DFAgentDescription description = new DFAgentDescription();
         ServiceDescription sdd = new ServiceDescription();
-        sdd.setType("sector-registration");
-        template.addServices(sdd);
-        Behaviour sectorUpdater = new SubscriptionInitiator(this, DFService.createSubscriptionMessage(this, getDefaultDF(), template, null)) {
+        sdd.setName("sector-registration");
+        sdd.setType("DF-Subscriptions");
+        description.addServices(sdd);
+        
+        // subscribe to new sector registrations
+        Behaviour sectorUpdater = new SubscriptionInitiator(this, DFService.createSubscriptionMessage(this, getDefaultDF(), description, null)) {
             @Override
             protected void handleInform(ACLMessage inform) {
                 try {
@@ -67,40 +72,57 @@ public class SectorAgent extends Agent {
                             knownSectors.add(dfds[i].getName());
                         }
                     }
-                    System.out.println(getLocalName() + ": " + knownSectors.size() + " sector(s) known");
+                    System.out.println("[S] "+getLocalName() + "\t # acknowledges " + knownSectors.size() + " sector(s)");
                 } catch (FIPAException fe) {
                     fe.printStackTrace();
                 }
             }
         };
         addBehaviour(sectorUpdater);
-
-        /*
-         *      DF registration
-         */
-
-        DFAgentDescription DFAgDescription = new DFAgentDescription();
-        DFAgDescription.setName(getAID());
-        ServiceDescription sd = new ServiceDescription();
-        sd.setType("sector-registration");
-        sd.setName("HLE4TC");
-        DFAgDescription.addServices(sd);
+        
+        // and register itself
         try {
-            DFService.register(this, DFAgDescription);
+            DFService.register(this, description);      // do register with the DF
         } catch (Exception fe) {
             fe.printStackTrace();
         }
 
+
+//        /*
+//         *      DF registration
+//         */
+//
+//        DFAgentDescription DFAgDescription = new DFAgentDescription();
+//        DFAgDescription.setName(getAID());
+//        ServiceDescription sd = new ServiceDescription();
+//        sd.setType("sector-registration");
+//        sd.setName("HLE4TC");
+//        DFAgDescription.addServices(sd);
+//        try {
+//            DFService.register(this, DFAgDescription);
+//        } catch (Exception fe) {
+//            fe.printStackTrace();
+//        }
+
         /*
          *      Behaviour: respond to subscriptions and inform every 5 seconds
          */
+        
 
-        System.out.println("* "+getLocalName() + "\tis up and waiting for subscriptions...");
         //SubscriptionResponder.SubscriptionManager manager = new SubscriptionResponder(this, null).
         subscriptionResponder = new SectorSubscriptionResp(this);
-        SectorProposalInit propInitiator = new SectorProposalInit(this, null);
+        SectorProposalInit propInitiator = new SectorProposalInit(this, null);  // msg is null; prepareInitiations() specifies initiator message 
         subscriptionResponder.registerHandleSubscription(propInitiator);
+        
+    //    propInitiator.registerHandleAllResponses(sectorUpdater);
+        
+        
+        //LOOP?
+        //propInitiator.registerHandleAllResponses(sectorUpdater);
+        //proposalResponder.registerPrepareResponse(subscriptionResponder);
+        
         addBehaviour(subscriptionResponder);    // pass handle to proposal behaviour
+        
         
         addBehaviour(new TickerBehaviour(this, 5000) {
             @Override
@@ -112,7 +134,11 @@ public class SectorAgent extends Agent {
             }
         });
         
-        proposalResponder = new SectorProposalResp(this, null);
+        MessageTemplate proposalRespTemplate = MessageTemplate.and(
+        MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
+        MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_PROPOSE));
+        
+        proposalResponder = new SectorProposalResp(this, proposalRespTemplate);
         addBehaviour(proposalResponder);
 
         /*
@@ -149,22 +175,17 @@ public class SectorAgent extends Agent {
 class SectorSubscriptionResp extends SubscriptionResponder {
 
         //TODO: check other constructor with SubscriptionManager
+    
+    
     SectorSubscriptionResp(Agent a) {
         super(a, MessageTemplate.and(
             MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE),
                 MessageTemplate.MatchPerformative(ACLMessage.CANCEL)),
             MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_SUBSCRIBE)));
-
             // HERE PLUG IN propose initiator !!! pp 107 
-
-
     }
-
-
-
-        
-        
-
+    
+    
 
 
         // USE to nest?
@@ -183,6 +204,13 @@ class SectorSubscriptionResp extends SubscriptionResponder {
 
         }
 
+    
+    /*
+     * Registerhandlesubscription in main; handleSubscription won't work
+     * 
+     * 
+     */
+    
         @Override
         protected ACLMessage handleSubscription(ACLMessage subscriptionMsg) throws RefuseException {
             System.out.println(getLocalName() + ": Received subscription request from " + subscriptionMsg.getSender().getLocalName() + " [" + subscriptionMsg.getContent() + "]");
@@ -191,7 +219,7 @@ class SectorSubscriptionResp extends SubscriptionResponder {
             // if successful, should answer (return) with AGREE; otherwise with REFUSE or NOT_UNDERSTOOD
             //TODO: implemend return for not-understood
 
-            if (junctionFits(subscriptionMsg)) {
+            if (junctionMatches(subscriptionMsg)) {
                 /* negotiate (propose) with other sectors here */
                 if (junctionAwarded(subscriptionMsg)) {
                     // We agree to perform the action. 
@@ -241,7 +269,7 @@ class SectorSubscriptionResp extends SubscriptionResponder {
             }
         }
 
-        private boolean junctionFits(ACLMessage subscription) {
+        private boolean junctionMatches(ACLMessage subscription) {
             //TODO: evaluate subscription and decide wheter you want it
             /*
              * Decide initially by checking several factors such as:
@@ -292,20 +320,26 @@ class SectorProposalResp extends ProposeResponder {
         super(a, mt);
     }
     
-    
-
     @Override
     protected ACLMessage prepareResponse(ACLMessage propose) throws NotUnderstoodException, RefuseException {
 
         ACLMessage reply = propose.createReply();
         if (Math.random() > 0.5) {
             reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+            System.out.println("[S] " + getLocalName() + " I reject " +propose.getContent()+" -> "+propose.getSender().getLocalName());
+            
         } else {
             reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+            System.out.println("[S] " + getLocalName() + " I accept "+propose.getContent()+" -> "+propose.getSender().getLocalName());
         }
+        reply.setContent(propose.getContent());
 
         return reply;
     }
+
+    
+    
+    
 }
 
 class SectorProposalInit extends ProposeInitiator {
@@ -314,6 +348,9 @@ class SectorProposalInit extends ProposeInitiator {
         super(a, msg);
     }
 
+    /*
+     * Broadcast your interest in a junction to all intersections
+     */
     @Override
     protected Vector prepareInitiations(ACLMessage propose) {
 
@@ -321,7 +358,7 @@ class SectorProposalInit extends ProposeInitiator {
         String incomingSubscriptionKey = (String) ((SectorSubscriptionResp) parent).SUBSCRIPTION_KEY;
         ACLMessage incomingSubscription = (ACLMessage) getDataStore().get(incomingSubscriptionKey);
             // Prepare the request to forward to the responder
-        System.out.println("[S] " + getLocalName() + "\t *PROPOSE* register junction to sectors (x" + knownSectors.size() + ")");
+        System.out.println("[S] " + getLocalName() + "\t = PROPOSE subscribe junction "+incomingSubscription.getSender().getLocalName()+" to other sectors (x" + knownSectors.size() + ")");
         Vector v = new Vector(1);
         for (int s = 0; s < knownSectors.size(); s++) {
             ACLMessage outgoingPropose = new ACLMessage(ACLMessage.PROPOSE);
@@ -331,14 +368,25 @@ class SectorProposalInit extends ProposeInitiator {
             outgoingPropose.setReplyByDate(incomingSubscription.getReplyByDate());
             v.addElement(outgoingPropose);
         }
-
         return v;
     }
+    
+    
+    
 
     @Override
     protected void handleAcceptProposal(ACLMessage accept_proposal) {
             //super.handleAcceptProposal(accept_proposal); //To change body of generated methods, choose Tools | Templates.
             // TODO: send agree message to subscriber      
+        System.out.println("--> Agent " + getLocalName() + ": received accept proposal from"+accept_proposal.getSender().getLocalName());
+        
+        /*
+         * transform the accept-proposal into agree-subscribe
+         * 
+         */
+        
+        
+        
         storeNotification(ACLMessage.ACCEPT_PROPOSAL, accept_proposal);
     }
 
@@ -354,6 +402,13 @@ class SectorProposalInit extends ProposeInitiator {
     protected void handleNotUnderstood(ACLMessage notUnderstood) {
         storeNotification(ACLMessage.NOT_UNDERSTOOD,notUnderstood);
     }
+
+        @Override
+    protected void handleAllResponses(Vector responses) {
+           System.out.println("--> Agent " + getLocalName() + ": received RESPONSES from"+responses.size());
+        }
+    
+    
 
 //    @Override
 //    protected void handleAllResponses(Vector responses) {
@@ -381,7 +436,7 @@ class SectorProposalInit extends ProposeInitiator {
         String notificationkey = (String) ((SectorSubscriptionResp) parent).RESPONSE_KEY;
         getDataStore().put(notificationkey, notification);
     }
-}
+    }
 
     String timestamp() {
         StringBuilder sb = new StringBuilder();

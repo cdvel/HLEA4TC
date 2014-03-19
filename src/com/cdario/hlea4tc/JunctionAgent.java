@@ -41,7 +41,8 @@ public class JunctionAgent extends Agent {
 
         DFAgentDescription template = new DFAgentDescription();
         ServiceDescription sdd = new ServiceDescription();
-        sdd.setType("sector-registration");
+        sdd.setName("sector-registration");
+        sdd.setType("DF-Subscriptions");
         template.addServices(sdd);
         Behaviour sectorUpdater = new SubscriptionInitiator(this, DFService.createSubscriptionMessage(this, getDefaultDF(), template, null)) {
             @Override
@@ -50,12 +51,12 @@ public class JunctionAgent extends Agent {
                     DFAgentDescription[] dfds = DFService.decodeNotification(inform.getContent());
 
                     for (int i = 0; i < dfds.length; i++) {
-                        if (!dfds[i].getName().equals(myAgent.getAID())) // know thyself
+                        if (!dfds[i].getName().equals(myAgent.getAID())) // know thyself TODO: unneeded here, but when refactoring; only sectors register
                         {
                             knownSectors.add(dfds[i].getName());
                         }
                     }
-                    System.out.println("[J] " + getLocalName() + "\t" + knownSectors.size() + " sector(s) known");
+                    System.out.println("[J] " + getLocalName() + "\t # acknowledges " + knownSectors.size() + " sector(s)");
                 } catch (FIPAException fe) {
                     fe.printStackTrace();
                 }
@@ -67,7 +68,7 @@ public class JunctionAgent extends Agent {
          * attempt subscribe every 5 seconds
          */
 
-        addBehaviour(new TickerBehaviour(this, 5000) {
+        addBehaviour(new TickerBehaviour(this, 8000) {
             @Override
             protected void onTick() {
                 if (knownSectors != null && knownSectors.size() > 0) {
@@ -82,11 +83,11 @@ public class JunctionAgent extends Agent {
     }
 
     class JunctionSubscriptionInit extends SubscriptionInitiator {
-
+        
         JunctionSubscriptionInit(Agent agent) { 
             super(agent, new ACLMessage(ACLMessage.SUBSCRIBE));
         }
-
+        
         /*  Vector is deprecated, but JADE API requires it    */
         @Override 
         protected Vector<ACLMessage> prepareSubscriptions(ACLMessage subscription) {
@@ -95,7 +96,7 @@ public class JunctionAgent extends Agent {
             for (int i = 0; i < knownSectors.size(); ++i) {
                 subscription.addReceiver(knownSectors.get(i));   // the agent supplying a subscription service (has a responder role)
             }
-            System.out.println("[J] " + myAgent.getLocalName() + "\t  *SUBSCRIPTION* request to sectors (x" + knownSectors.size() + ")");
+            System.out.println("[J] " + myAgent.getLocalName() + "\t >> SUBSCRIPTION request to sectors (x" + knownSectors.size() + ")");
 
             subscription.setContent("subscription-request");   // the subscription content
             subscription.setReplyByDate(new Date(System.currentTimeMillis() + 10000));
@@ -103,6 +104,32 @@ public class JunctionAgent extends Agent {
             v.addElement(subscription);
             return v;
         }
+
+        
+        /*
+         *  Interested in accept-propsal, reject proposal performatives 
+         */
+//        @Override
+//        protected void handleAllResponses(Vector responses) {
+//            
+//            for (int i=0; i<responses.size(); i++)
+//            {
+//                ACLMessage thisMsg = (ACLMessage)responses.get(i);
+//                if (thisMsg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL)
+//                {
+//                  System.out.println("[J] " + myAgent.getLocalName() + "\t ! SUBSCRIBED to " + thisMsg.getSender().getLocalName());  
+//                }
+//                
+//                
+//                // THIS IF...
+//                if (thisMsg.getPerformative() == ACLMessage.INFORM)
+//                    
+//                {
+//                  System.out.println("[J] " + myAgent.getLocalName() + "\t & INFORMED " + thisMsg.getContent());  
+//                }
+//            }
+//        }
+        
 
         @Override
         protected void handleRefuse(ACLMessage refuse) {
