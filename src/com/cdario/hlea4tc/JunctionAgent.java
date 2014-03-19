@@ -21,54 +21,52 @@ import java.util.Locale;
 import java.util.Vector;
 
 /*
- * Implements the initiator roles in FIPA-Subscribe IP. 
+ * Implements the initiator roles in FIPA-Subscribe IP.
  */
 public class JunctionAgent extends Agent {
 
     protected String junctionID;
     protected AID mySector;
     protected ArrayList<AID> knownSectors;
-    
+
     @Override
     protected void setup() {
 
         knownSectors = new ArrayList<AID>();
         junctionID = getLocalName();
-        
+
         /*
          *      Behaviour: update known sectors by subscribing to DF
          */
-                
+
         DFAgentDescription template = new DFAgentDescription();
         ServiceDescription sdd = new ServiceDescription();
         sdd.setType("sector-registration");
-        template.addServices(sdd);       
-        Behaviour sectorUpdater = new SubscriptionInitiator(this, DFService.createSubscriptionMessage(this, getDefaultDF(), template, null)) 
-        {
-         @Override
-	 protected void handleInform(ACLMessage inform) {
-		try {
+        template.addServices(sdd);
+        Behaviour sectorUpdater = new SubscriptionInitiator(this, DFService.createSubscriptionMessage(this, getDefaultDF(), template, null)) {
+            @Override
+            protected void handleInform(ACLMessage inform) {
+                try {
                     DFAgentDescription[] dfds = DFService.decodeNotification(inform.getContent());
-                    
+
                     for (int i = 0; i < dfds.length; i++) {
-                       if (!dfds[i].getName().equals(myAgent.getAID()))   // know thyself
-                       {
-                           knownSectors.add(dfds[i].getName());
-                       }
-                   }
-                    System.out.println("Junction " + getLocalName() + ": "+knownSectors.size()+" sector(s) known");
-		}
-		catch (FIPAException fe) {
-		  fe.printStackTrace();
-		}
-	  }
+                        if (!dfds[i].getName().equals(myAgent.getAID())) // know thyself
+                        {
+                            knownSectors.add(dfds[i].getName());
+                        }
+                    }
+                    System.out.println("[J] " + getLocalName() + "\t" + knownSectors.size() + " sector(s) known");
+                } catch (FIPAException fe) {
+                    fe.printStackTrace();
+                }
+            }
         };
         addBehaviour(sectorUpdater);
-        
+
         /*
          * attempt subscribe every 5 seconds
          */
-        
+
         addBehaviour(new TickerBehaviour(this, 5000) {
             @Override
             protected void onTick() {
@@ -79,7 +77,7 @@ public class JunctionAgent extends Agent {
                 }
             }
         });
-              
+
 
     }
 
@@ -97,8 +95,8 @@ public class JunctionAgent extends Agent {
             for (int i = 0; i < knownSectors.size(); ++i) {
                 subscription.addReceiver(knownSectors.get(i));   // the agent supplying a subscription service (has a responder role)
             }
-            System.out.println("Junction "+myAgent.getLocalName()+": Requesting subscription to " + knownSectors.size() + " Sectors");
-           
+            System.out.println("[J] " + myAgent.getLocalName() + "\t  *SUBSCRIPTION* request to sectors (x" + knownSectors.size() + ")");
+
             subscription.setContent("subscription-request");   // the subscription content
             subscription.setReplyByDate(new Date(System.currentTimeMillis() + 10000));
             Vector<ACLMessage> v = new Vector<ACLMessage>();
@@ -108,26 +106,26 @@ public class JunctionAgent extends Agent {
 
         @Override
         protected void handleRefuse(ACLMessage refuse) {
-            System.out.println("Junction "+myAgent.getLocalName()+": Sector " + refuse.getSender().getLocalName() + " refused " + getLocalName() + "'s subscription");
+            System.out.println("Junction " + myAgent.getLocalName() + ": Sector " + refuse.getSender().getLocalName() + " refused " + getLocalName() + "'s subscription");
         }
 
         @Override
         protected void handleAgree(ACLMessage agree) {
-            
+
             //TODO: unregister from other SECTORS here
             // see cancel-meta protocol
-   
+
             if (mySector == null) {
                 mySector = agree.getSender();   //set new sector
             } else {   // sector already set
 
                 if (!mySector.getName().equals(agree.getSender().getName())) {
-                    
+
                     cancel(mySector, true);  // cancel old subscription and do ignore confirmation
                     cancellationCompleted(mySector);    //TODO: upgrade to SubscriptionManager in handleCancel receiver
                     AID oldSector = mySector;
                     mySector = agree.getSender();   //update to new sector
-                    System.out.println("Junction " + myAgent.getLocalName() + ": Reallocated from Sector " + oldSector.getLocalName()+" to "+ mySector.getLocalName());
+                    System.out.println("Junction " + myAgent.getLocalName() + ": Reallocated from Sector " + oldSector.getLocalName() + " to " + mySector.getLocalName());
 //                    System.out.println("Junction " + myAgent.getLocalName() + ": Sector " + agree.getSender().getLocalName() + " agreed to " + getLocalName() + "'s subscription");
                 } else {   //same sector
                     System.out.println("Junction " + getLocalName() + ": Stays in Sector " + agree.getSender().getLocalName());
@@ -137,10 +135,10 @@ public class JunctionAgent extends Agent {
 
         @Override
         protected void handleInform(ACLMessage inform) {
-            
-            if (inform.getSender().getLocalName().equals(mySector.getLocalName()))  // TODOD: disregard messages from other SECTORS
+
+            if (inform.getSender().getLocalName().equals(mySector.getLocalName())) // TODOD: disregard messages from other SECTORS
             {
-                System.out.println(">>> Junction "+myAgent.getLocalName()+"[in "+mySector.getLocalName()+"]: Sector says --> "  + inform.getContent());
+                System.out.println(">>> Junction " + myAgent.getLocalName() + "[in " + mySector.getLocalName() + "]: Sector says --> " + inform.getContent());
             }
         }
 
@@ -150,7 +148,7 @@ public class JunctionAgent extends Agent {
                 // FAILURE notification from the JADE runtime: the receiver does not exist
                 System.out.println("Responder does not exist");
             } else {
-                System.out.println("Junction "+myAgent.getLocalName()+": Sector " + failure.getSender().getLocalName() + " failed to perform the requested action");
+                System.out.println("Junction " + myAgent.getLocalName() + ": Sector " + failure.getSender().getLocalName() + " failed to perform the requested action");
             }
         }
 
