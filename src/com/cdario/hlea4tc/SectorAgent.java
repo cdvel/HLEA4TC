@@ -33,16 +33,32 @@ import java.util.Vector;
 /*
  * Implements the responder role in FIPA-Subscribe IP. 
  */
+/**
+ *
+ * @author cesar
+ */
 public class SectorAgent extends Agent {
 
+    /**
+     *
+     */
     protected int sectorID;
+    /**
+     *
+     */
     protected AID[] myJunctions;
     //protected AID[] knownSectors;
+    /**
+     *
+     */
     protected ArrayList<AID> knownSectors;
-    protected SectorSubscriptionResp subscriptionResponder;
-    protected SectorProposalInit proposalInitiator;
-    protected SectorProposalResp proposalResponder;
+    private SectorSubscriptionResp subscriptionResponder;
+    private SectorProposalInit proposalInitiator;
+    private SectorProposalResp proposalResponder;
 
+    /**
+     *
+     */
     @Override
     protected void setup() {
 
@@ -51,7 +67,6 @@ public class SectorAgent extends Agent {
         
         /*
          *      Register with DF and subscribe to sector-resgistration
-         *      Behaviour: update known by subscribing to DF
          */
 
         DFAgentDescription description = new DFAgentDescription();
@@ -60,67 +75,26 @@ public class SectorAgent extends Agent {
         sdd.setType("DF-Subscriptions");
         description.addServices(sdd);
         
-        // subscribe to new sector registrations
-        Behaviour sectorUpdater = new SubscriptionInitiator(this, DFService.createSubscriptionMessage(this, getDefaultDF(), description, null)) {
-            @Override
-            protected void handleInform(ACLMessage inform) {
-                try {
-                    DFAgentDescription[] dfds = DFService.decodeNotification(inform.getContent());
-                    for (int i = 0; i < dfds.length; i++) {
-                        if (!dfds[i].getName().equals(myAgent.getAID())) // know thyself
-                        {
-                            knownSectors.add(dfds[i].getName());
-                        }
-                    }
-                    System.out.println("[S] "+getLocalName() + "\t # acknowledges " + knownSectors.size() + " sector(s)");
-                } catch (FIPAException fe) {
-                    fe.printStackTrace();
-                }
-            }
-        };
+        // subscribe to new sectors dynamically
+        SectorManager sectorUpdater = new SectorManager(this, DFService.createSubscriptionMessage(this, getDefaultDF(), description, null), knownSectors);
         addBehaviour(sectorUpdater);
         
-        // and register itself
+        // and register itself to the DF
         try {
-            DFService.register(this, description);      // do register with the DF
+            DFService.register(this, description); 
         } catch (Exception fe) {
             fe.printStackTrace();
         }
 
 
-//        /*
-//         *      DF registration
-//         */
-//
-//        DFAgentDescription DFAgDescription = new DFAgentDescription();
-//        DFAgDescription.setName(getAID());
-//        ServiceDescription sd = new ServiceDescription();
-//        sd.setType("sector-registration");
-//        sd.setName("HLE4TC");
-//        DFAgDescription.addServices(sd);
-//        try {
-//            DFService.register(this, DFAgDescription);
-//        } catch (Exception fe) {
-//            fe.printStackTrace();
-//        }
-
-        /*
-         *      Behaviour: respond to subscriptions and inform every 5 seconds
-         */
-        
-
         //SubscriptionResponder.SubscriptionManager manager = new SubscriptionResponder(this, null).
         subscriptionResponder = new SectorSubscriptionResp(this);
-        SectorProposalInit propInitiator = new SectorProposalInit(this, null);  // msg is null; prepareInitiations() specifies initiator message 
-        subscriptionResponder.registerHandleSubscription(propInitiator);
-        
-    //    propInitiator.registerHandleAllResponses(sectorUpdater);
-        
-        
+        proposalInitiator = new SectorProposalInit(this, null);  // msg is null; prepareInitiations() specifies initiator message 
+        subscriptionResponder.registerHandleSubscription(proposalInitiator);
+    //    proposalInitiator.registerHandleAllResponses(sectorUpdater);
         //LOOP?
         //propInitiator.registerHandleAllResponses(sectorUpdater);
         //proposalResponder.registerPrepareResponse(subscriptionResponder);
-        
         addBehaviour(subscriptionResponder);    // pass handle to proposal behaviour
         
         
@@ -141,307 +115,13 @@ public class SectorAgent extends Agent {
         proposalResponder = new SectorProposalResp(this, proposalRespTemplate);
         addBehaviour(proposalResponder);
 
-        /*
-         *      Behaviour: negotiate junctions once? every 10 seconds?
-         */
-
-//        addBehaviour(new WakerBehaviour(this, 10000) {
-//            @Override
-//            protected void onWake() {
-//
-//                MessageTemplate contractTemplate = MessageTemplate.and(
-//                    MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET),
-//                    MessageTemplate.MatchPerformative(ACLMessage.CFP));
-//
-//                ACLMessage msgCFP = new ACLMessage(ACLMessage.CFP);
-//                for (int i = 0; i < knownSectors.size(); ++i) {
-//                    msgCFP.addReceiver(new AID((String) knownSectors.get(i).getLocalName(), AID.ISLOCALNAME));
-//                }
-//
-//                msgCFP.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
-//                msgCFP.setReplyByDate(new Date(System.currentTimeMillis() + 10000)); // We want to receive a reply in 10 secs
-//                msgCFP.setContent("sector-negotiation");    //TODO: intersection ID and contribution here?
-//
-////                negotiatorInit = new SectorJunctionNegotiatorInit(myAgent, msgCFP);
-////                negotiatorResp = new SectorJunctionNegotiatorResp(myAgent, contractTemplate);
-////
-////                addBehaviour(negotiatorInit);
-////                addBehaviour(negotiatorResp);
-//
-//            }
-//        });
 }
 
-class SectorSubscriptionResp extends SubscriptionResponder {
-
-        //TODO: check other constructor with SubscriptionManager
-    
-    
-    SectorSubscriptionResp(Agent a) {
-        super(a, MessageTemplate.and(
-            MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE),
-                MessageTemplate.MatchPerformative(ACLMessage.CANCEL)),
-            MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_SUBSCRIBE)));
-            // HERE PLUG IN propose initiator !!! pp 107 
-    }
-    
-    
-
-
-        // USE to nest?
-        //        @Override
-        //        public void registerHandleSubscription(Behaviour b) {
-        //            super.registerHandleSubscription(b); //To change body of generated methods, choose Tools | Templates.
-        //        }
-    @Override
-    protected ACLMessage handleCancel(ACLMessage cancel) throws FailureException {
-
-        System.out.println(getLocalName() + " : Canceling subscription from " + cancel.getSender().getLocalName());
-        Subscription subsc = getSubscription(cancel);
-            //           if (subsc!=null)    //TODO: subscription 
-            //             this.mySubscriptionManager.deregister(subsc);
-            return null;             //return cancel;
-
-        }
-
-    
-    /*
-     * Registerhandlesubscription in main; handleSubscription won't work
-     * 
-     * 
-     */
-    
-        @Override
-        protected ACLMessage handleSubscription(ACLMessage subscriptionMsg) throws RefuseException {
-            System.out.println(getLocalName() + ": Received subscription request from " + subscriptionMsg.getSender().getLocalName() + " [" + subscriptionMsg.getContent() + "]");
-            ACLMessage reply = subscriptionMsg.createReply();
-
-            // if successful, should answer (return) with AGREE; otherwise with REFUSE or NOT_UNDERSTOOD
-            //TODO: implemend return for not-understood
-
-            if (junctionMatches(subscriptionMsg)) {
-                /* negotiate (propose) with other sectors here */
-                if (junctionAwarded(subscriptionMsg)) {
-                    // We agree to perform the action. 
-                    Vector previousSub = getSubscriptions(subscriptionMsg.getSender());   // 
-                    if (previousSub.size() == 0) // one subscriptionMsg per junction
-                    {
-                        createSubscription(subscriptionMsg);
-                    }
-                    System.out.println(getLocalName() + ": AGREED subscription request from " + subscriptionMsg.getSender().getLocalName() + " [" + subscriptionMsg.getContent() + "]");
-                    reply.setPerformative(ACLMessage.AGREE);
-
-                } else {
-                    reply.setPerformative(ACLMessage.REFUSE);
-                }
-            } else {
-                // We refuse to perform the action
-                System.out.println(getLocalName() + ": REFUSED subscription request from " + subscriptionMsg.getSender().getLocalName() + " [" + subscriptionMsg.getContent() + "]");
-                reply.setPerformative(ACLMessage.REFUSE);
-            }
-            
-            storeNotification(ACLMessage.SUBSCRIBE);
-            return reply;
-        }
-        
-        private void storeNotification(int performative) {
-          if (performative == ACLMessage.SUBSCRIBE) {
-             System.out.println("Agent "+getLocalName()+": subscription successful");
-         }
-
-					// Retrieve the incoming request from the DataStore
-         String incomingSubscriptionkey = (String) ((SectorSubscriptionResp) parent).SUBSCRIPTION_KEY;
-         ACLMessage incomingSubscription = (ACLMessage) getDataStore().get(incomingSubscriptionkey);
-					// Prepare the notification to the request originator and store it in the DataStore
-         ACLMessage notification = incomingSubscription.createReply();
-         notification.setPerformative(performative);
-         String notificationkey = (String) ((SectorSubscriptionResp) parent).RESPONSE_KEY;
-         getDataStore().put(notificationkey, notification);
-     }
-
-     protected void notifyJunctions(ACLMessage inform) {
-            // this is the method you invoke ("call-back") for creating a new inform message; not part of the SubscriptionResponder API, rename it
-
-            // go through every subscription
-            Vector subs = getSubscriptions(); // from stored by createSubscription
-            for (int i = 0; i < subs.size(); i++) {
-                ((SubscriptionResponder.Subscription) subs.elementAt(i)).notify(inform);
-            }
-        }
-
-        private boolean junctionMatches(ACLMessage subscription) {
-            //TODO: evaluate subscription and decide wheter you want it
-            /*
-             * Decide initially by checking several factors such as:
-             * 
-             * 1. current no. of subscribe junctions
-             * 2. how does the new junction fit with others, similar traff
-             *    density? volume? contribution?
-             *  
-             */
-            return (Math.random() > 0.5);
-        }
-
-        private boolean junctionAwarded(final ACLMessage subscription) {
-
-            //TODO: run OneShot nested with ContractNetInit against all known Sectors
-            /*
-             * Here starts negotiation with other junctions
-             * 
-             */
-//            addBehaviour(new OneShotBehaviour(myAgent) {
-//                @Override
-//                public void action() {
-//                    /*
-//                     * send CFPs to ll known sectors
-//                     */
-//                    ACLMessage msgCFP = new ACLMessage(ACLMessage.CFP);
-//                    for (int i = 0; i < knownSectors.size(); ++i) {
-//                        msgCFP.addReceiver(new AID((String) knownSectors.get(i).getLocalName(), AID.ISLOCALNAME));
-//                    }
-//
-//                    msgCFP.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
-//                    msgCFP.setReplyByDate(new Date(System.currentTimeMillis() + 5000)); // We want to receive a reply in 5 secs
-//                    msgCFP.setContent(subscription.getContent());    //TODO: intersection ID and contribution here? POJO?
-//
-//                    //negotiatorInit = new SectorJunctionNegotiatorInit(myAgent, msgCFP);
-//                    addBehaviour(new SectorJunctionNegotiatorInit(myAgent, msgCFP));
-//                }
-//            });
-
-return (Math.random() > 0.5);
-}
-
-}
-
-class SectorProposalResp extends ProposeResponder {
-
-    public SectorProposalResp(Agent a, MessageTemplate mt) {
-        super(a, mt);
-    }
-    
-    @Override
-    protected ACLMessage prepareResponse(ACLMessage propose) throws NotUnderstoodException, RefuseException {
-
-        ACLMessage reply = propose.createReply();
-        if (Math.random() > 0.5) {
-            reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
-            System.out.println("[S] " + getLocalName() + " I reject " +propose.getContent()+" -> "+propose.getSender().getLocalName());
-            
-        } else {
-            reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-            System.out.println("[S] " + getLocalName() + " I accept "+propose.getContent()+" -> "+propose.getSender().getLocalName());
-        }
-        reply.setContent(propose.getContent());
-
-        return reply;
-    }
-
-    
-    
-    
-}
-
-class SectorProposalInit extends ProposeInitiator {
-
-    public SectorProposalInit(Agent a, ACLMessage msg) {
-        super(a, msg);
-    }
-
-    /*
-     * Broadcast your interest in a junction to all intersections
-     */
-    @Override
-    protected Vector prepareInitiations(ACLMessage propose) {
-
-            // Retrieve the incoming subscription from the DataStore
-        String incomingSubscriptionKey = (String) ((SectorSubscriptionResp) parent).SUBSCRIPTION_KEY;
-        ACLMessage incomingSubscription = (ACLMessage) getDataStore().get(incomingSubscriptionKey);
-            // Prepare the request to forward to the responder
-        System.out.println("[S] " + getLocalName() + "\t = PROPOSE subscribe junction "+incomingSubscription.getSender().getLocalName()+" to other sectors (x" + knownSectors.size() + ")");
-        Vector v = new Vector(1);
-        for (int s = 0; s < knownSectors.size(); s++) {
-            ACLMessage outgoingPropose = new ACLMessage(ACLMessage.PROPOSE);
-            outgoingPropose.setProtocol(FIPANames.InteractionProtocol.FIPA_PROPOSE);
-            outgoingPropose.addReceiver(knownSectors.get(s));
-            outgoingPropose.setContent(incomingSubscription.getContent());
-            outgoingPropose.setReplyByDate(incomingSubscription.getReplyByDate());
-            v.addElement(outgoingPropose);
-        }
-        return v;
-    }
-    
-    
-    
-
-    @Override
-    protected void handleAcceptProposal(ACLMessage accept_proposal) {
-            //super.handleAcceptProposal(accept_proposal); //To change body of generated methods, choose Tools | Templates.
-            // TODO: send agree message to subscriber      
-        System.out.println("--> Agent " + getLocalName() + ": received accept proposal from"+accept_proposal.getSender().getLocalName());
-        
-        /*
-         * transform the accept-proposal into agree-subscribe
-         * 
-         */
-        
-        
-        
-        storeNotification(ACLMessage.ACCEPT_PROPOSAL, accept_proposal);
-    }
-
-    @Override
-    protected void handleRejectProposal(ACLMessage reject_proposal) {
-            //super.handleRejectProposal(reject_proposal); //To change body of generated methods, choose Tools | Templates.
-            // TODO: send refuse to subscriber
-        storeNotification(ACLMessage.REJECT_PROPOSAL, reject_proposal);
-
-    }
-
-    @Override
-    protected void handleNotUnderstood(ACLMessage notUnderstood) {
-        storeNotification(ACLMessage.NOT_UNDERSTOOD,notUnderstood);
-    }
-
-        @Override
-    protected void handleAllResponses(Vector responses) {
-           System.out.println("--> Agent " + getLocalName() + ": received RESPONSES from"+responses.size());
-        }
-    
-    
-
-//    @Override
-//    protected void handleAllResponses(Vector responses) {
-//        if (responses.size() == 0) {
-//            storeNotification(ACLMessage.FAILURE, null);
-//        }
-//    }
-
-    private void storeNotification(int performative, ACLMessage original) {
-        if (performative == ACLMessage.ACCEPT_PROPOSAL) {
-            System.out.println("Agent " + getLocalName() + ": proposal successful");
-        } else {
-            
-            System.out.println("Agent " + getLocalName() + ": proposal failed");
-        }
-
-            // Retrieve the incoming request from the DataStore
-        String incomingSubscriptionkey = (String) ((SectorSubscriptionResp) parent).SUBSCRIPTION_KEY;
-        ACLMessage incomingSubscription = (ACLMessage) getDataStore().get(incomingSubscriptionkey);
-            // Prepare the notification to the request originator and store it in the DataStore
-        ACLMessage notification = incomingSubscription.createReply();
-        notification.setPerformative(performative);
-        if (original !=null)
-            notification.setContent(original.getContent());
-        String notificationkey = (String) ((SectorSubscriptionResp) parent).RESPONSE_KEY;
-        getDataStore().put(notificationkey, notification);
-    }
-    }
-
-    String timestamp() {
+String timestamp() {
         StringBuilder sb = new StringBuilder();
         Formatter format = new Formatter(sb, Locale.ENGLISH);
         format.format("%tT ", Calendar.getInstance());
         return sb.toString();
     }
+
 }

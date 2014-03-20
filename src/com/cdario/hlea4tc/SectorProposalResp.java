@@ -4,10 +4,34 @@
  */
 package com.cdario.hlea4tc;
 
-/**
- *
- * @author cesar
- */
-public class SectorProposalResp {
+import jade.core.Agent;
+import jade.domain.FIPAAgentManagement.NotUnderstoodException;
+import jade.domain.FIPAAgentManagement.RefuseException;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import jade.proto.ProposeResponder;
+
+class SectorProposalResp extends ProposeResponder {
+
+    public SectorProposalResp(SectorAgent a, MessageTemplate mt) {
+        super(a, mt);
+    }
     
+    @Override
+    protected ACLMessage prepareResponse(ACLMessage propose) throws NotUnderstoodException, RefuseException {
+
+        ACLMessage reply = propose.createReply();
+        if (Math.random() > 0.5) {
+            reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+            System.out.println("[S] " + myAgent.getLocalName() + " I reject " +propose.getContent()+" -> "+propose.getSender().getLocalName());
+            
+        } else {
+            reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+            System.out.println("[S] " + myAgent.getLocalName() + " I accept "+propose.getContent()+" -> "+propose.getSender().getLocalName());
+        }
+        reply.setContent(propose.getContent());
+
+        return reply;
+    }
+
 }
