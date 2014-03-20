@@ -2,33 +2,17 @@ package com.cdario.hlea4tc;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
-import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.FailureException;
-import jade.domain.FIPAAgentManagement.NotUnderstoodException;
-import jade.domain.FIPAAgentManagement.RefuseException;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.domain.FIPAException;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import jade.proto.ContractNetInitiator;
-import jade.proto.ContractNetResponder;
-import jade.proto.ProposeInitiator;
-import jade.proto.ProposeResponder;
-import jade.proto.SubscriptionInitiator;
-import jade.proto.SubscriptionResponder;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.Locale;
-import java.util.Vector;
 
 /*
  * Implements the responder role in FIPA-Subscribe IP. 

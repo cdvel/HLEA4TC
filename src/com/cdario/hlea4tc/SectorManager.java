@@ -42,7 +42,7 @@ public class SectorManager extends SubscriptionInitiator{
                             knownSectors.add(dfds[i].getName());
                         }
                     }
-                    System.out.println("[J] " + myAgent.getLocalName() + "\t # acknowledges " + knownSectors.size() + " sector(s)");
+                    System.out.println("DF> " + myAgent.getLocalName() + "\t # acknowledges " + knownSectors.size() + " sector(s)");
                 } catch (FIPAException fe) {
                     fe.printStackTrace();
                 }

@@ -49,7 +49,8 @@ class JunctionSubscriptionInit extends SubscriptionInitiator {
         @Override
         protected void handleAllResponses(Vector responses) {
             
-            System.out.println("[J] hello"+ responses.size());  
+            //TODO: discriminate responses
+            System.out.println("[J] " + myAgent.getLocalName() + "\t <----------- NOTIFIED" );  
             for (int i=0; i<responses.size(); i++)
             {
                 ACLMessage thisMsg = (ACLMessage)responses.get(i);

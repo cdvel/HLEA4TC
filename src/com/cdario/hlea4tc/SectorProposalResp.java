@@ -23,11 +23,13 @@ class SectorProposalResp extends ProposeResponder {
         ACLMessage reply = propose.createReply();
         if (Math.random() > 0.5) {
             reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
-            System.out.println("[S] " + myAgent.getLocalName() + " I reject " +propose.getContent()+" -> "+propose.getSender().getLocalName());
+//            System.out.println("[S] " + myAgent.getLocalName() + " I reject " +propose.getContent()+" -> "+propose.getSender().getLocalName());
+            System.out.println("[S] " + myAgent.getLocalName() + "\t << REJECT-PROPOSAL for -"+propose.getContent()+"- from "+propose.getSender().getLocalName());
             
         } else {
             reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-            System.out.println("[S] " + myAgent.getLocalName() + " I accept "+propose.getContent()+" -> "+propose.getSender().getLocalName());
+//            System.out.println("[S] " + myAgent.getLocalName() + " I accept "+propose.getContent()+" -> "+propose.getSender().getLocalName());
+            System.out.println("[S] " + myAgent.getLocalName() + "\t << ACCEPT-PROPOSAL for -"+propose.getContent()+"- from "+propose.getSender().getLocalName());
         }
         reply.setContent(propose.getContent());
 

@@ -49,8 +49,8 @@ class SectorProposalInit extends ProposeInitiator {
     protected void handleAcceptProposal(ACLMessage accept_proposal) {
             //super.handleAcceptProposal(accept_proposal); //To change body of generated methods, choose Tools | Templates.
             // TODO: send agree message to subscriber      
-        System.out.println("--> Agent " + myAgent.getLocalName() + ": received accept proposal from"+accept_proposal.getSender().getLocalName());
-        
+        //System.out.println("--> Agent " + myAgent.getLocalName() + ": received accept proposal from"+accept_proposal.getSender().getLocalName());
+        System.out.println("[S] " + myAgent.getLocalName() + "\t @ ACCEPTED "+accept_proposal.getContent());
         /*
          * transform the accept-proposal into agree-subscribe
          * 
@@ -62,6 +62,7 @@ class SectorProposalInit extends ProposeInitiator {
     protected void handleRejectProposal(ACLMessage reject_proposal) {
             //super.handleRejectProposal(reject_proposal); //To change body of generated methods, choose Tools | Templates.
             // TODO: send refuse to subscriber
+        System.out.println("[S] " + myAgent.getLocalName() + "\t @ REJECTED "+reject_proposal.getContent());
         storeNotification(ACLMessage.REJECT_PROPOSAL, reject_proposal);
     }
 
@@ -70,10 +71,10 @@ class SectorProposalInit extends ProposeInitiator {
         storeNotification(ACLMessage.NOT_UNDERSTOOD,notUnderstood);
     }
 
-        @Override
-    protected void handleAllResponses(Vector responses) {
-           System.out.println("--> Agent " + myAgent.getLocalName() + ": received RESPONSES from"+responses.size());
-        }
+//        @Override
+//    protected void handleAllResponses(Vector responses) {
+//           System.out.println("--> Agent " + myAgent.getLocalName() + ": received RESPONSES from"+responses.size());
+//        }
 
 //    @Override
 //    protected void handleAllResponses(Vector responses) {
@@ -83,12 +84,11 @@ class SectorProposalInit extends ProposeInitiator {
 //    }
 
     private void storeNotification(int performative, ACLMessage original) {
-        if (performative == ACLMessage.ACCEPT_PROPOSAL) {
-            System.out.println("Agent " + myAgent.getLocalName() + ": proposal successful");
-        } else {
-            
-            System.out.println("Agent " + myAgent.getLocalName() + ": proposal failed");
-        }
+//        if (performative == ACLMessage.ACCEPT_PROPOSAL) {
+//            System.out.println("[S] " + myAgent.getLocalName() + "\t @ ACCEPTED "+original.getContent());
+//        } else {
+//            System.out.println("[S] " + myAgent.getLocalName() + "\t @ REJECTED "+original.getContent());
+//        }
 
             // Retrieve the incoming request from the DataStore
         String incomingSubscriptionkey = (String) ((SectorSubscriptionResp) parent).SUBSCRIPTION_KEY;
