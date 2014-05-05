@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.protocols;
 
+import com.cdario.hlea4tc.agents.JunctionAgent;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.domain.FIPANames;
@@ -13,12 +14,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Vector;
 
-class JunctionSubscriptionInit extends SubscriptionInitiator {
+public class JunctionSubscriptionInit extends SubscriptionInitiator {
         
         ArrayList<AID> knownSectors;
         AID mySector;
                 
-        JunctionSubscriptionInit(JunctionAgent agent) { 
+        public JunctionSubscriptionInit(JunctionAgent agent) { 
             
             super(agent, new ACLMessage(ACLMessage.SUBSCRIBE));
             knownSectors = agent.getKnownSectors();

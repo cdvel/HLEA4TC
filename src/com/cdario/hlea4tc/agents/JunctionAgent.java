@@ -1,42 +1,30 @@
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.agents;
 
+import com.cdario.hlea4tc.protocols.JunctionSubscriptionInit;
+import com.cdario.hlea4tc.protocols.SectorManager;
+import com.cdario.hlea4tc.integration.ControllerNativeInterface;
+import com.cdario.hlea4tc.integration.PlatformMediator;
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.NotUnderstoodException;
-import jade.domain.FIPAAgentManagement.RefuseException;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.lang.acl.ACLMessage;
-import jade.proto.AchieveREResponder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Formatter;
 import java.util.Locale;
 
-/*
- * Implements the initiator roles in FIPA-Subscribe IP.
- */
-/**
- *
- * @author cesar
- */
+
 public class JunctionAgent extends Agent {
 
-    /**
-     *
-     */
     protected String junctionID;
-    /**
-     *
-     */
     protected AID mySector;
-    /**
-     *
-     */
     protected ArrayList<AID> knownSectors;
+    protected ControllerNativeInterface controller;
 
+    private PlatformMediator app = PlatformMediator.getInstance();
     /**
      *
      */
@@ -45,6 +33,10 @@ public class JunctionAgent extends Agent {
 
         knownSectors = new ArrayList<AID>();
         junctionID = getLocalName();
+        setEnabledO2ACommunication(true, AP_MAX);    // permits interactions from Mediator
+        //controller = new ControllerNativeInterface();
+        //String greeting = ControllerNativeInterface.callControllerWrapper("j-01", 12);
+        //System.out.println(">>>> "+greeting);
 
         /*
          *      Behaviour: update known sectors by subscribing to DF
@@ -75,6 +67,22 @@ public class JunctionAgent extends Agent {
             }
         });
         
+        
+//        addBehaviour(new CyclicBehaviour(this){
+//            @Override
+//            public void action() {
+//                JunctionUpdateBean update = (JunctionUpdateBean)myAgent.getO2AObject();
+//                if (update!=null)
+//                {
+//                    //do something
+//                    //update.getJunctionID(); update.getValue(); update.getTimestamp();
+//                }else{
+//                    block();
+//                }
+//            }
+//        });
+        
+        
 //        addBehaviour(new TickerBehaviour(this, 8000) {
 //            @Override
 //            protected void onTick() {
@@ -97,19 +105,12 @@ public class JunctionAgent extends Agent {
 //            }
 //        });
     } 
-
-    String timestamp() {
-        StringBuilder sb = new StringBuilder();
-        Formatter format = new Formatter(sb, Locale.ENGLISH);
-        format.format("%tT ", Calendar.getInstance());
-        return sb.toString();
-    }
     
-    ArrayList<AID> getKnownSectors(){
+    public ArrayList<AID> getKnownSectors(){
         return knownSectors;
     }
     
-    AID getMySector ()
+    public AID getMySector ()
     {
         return mySector;
     }

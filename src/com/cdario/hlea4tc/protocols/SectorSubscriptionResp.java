@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.protocols;
 
+import com.cdario.hlea4tc.agents.SectorAgent;
 import jade.core.Agent;
 import jade.domain.FIPAAgentManagement.FailureException;
 import jade.domain.FIPAAgentManagement.RefuseException;
@@ -18,10 +19,10 @@ import java.util.Vector;
  * Manages incoming subscription from junctions to sectors
  *
  */
-class SectorSubscriptionResp extends SubscriptionResponder {
+public class SectorSubscriptionResp extends SubscriptionResponder {
 
     //TODO: check other constructor with SubscriptionManager
-    SectorSubscriptionResp(SectorAgent a) {
+    public SectorSubscriptionResp(SectorAgent a) {
         super(a, MessageTemplate.and(
                 MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE),
                 MessageTemplate.MatchPerformative(ACLMessage.CANCEL)),
@@ -96,7 +97,7 @@ class SectorSubscriptionResp extends SubscriptionResponder {
         getDataStore().put(notificationkey, notification);
     }
 
-    protected void notifyJunctions(ACLMessage inform) {
+    public void notifyJunctions(ACLMessage inform) {
         // this is the method you invoke ("call-back") for creating a new inform message; not part of the SubscriptionResponder API, rename it
 
         // go through every subscription

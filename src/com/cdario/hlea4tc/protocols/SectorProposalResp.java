@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.protocols;
 
+import com.cdario.hlea4tc.agents.SectorAgent;
 import jade.core.Agent;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.domain.FIPAAgentManagement.RefuseException;
@@ -11,7 +12,7 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.proto.ProposeResponder;
 
-class SectorProposalResp extends ProposeResponder {
+public class SectorProposalResp extends ProposeResponder {
 
     public SectorProposalResp(SectorAgent a, MessageTemplate mt) {
         super(a, mt);

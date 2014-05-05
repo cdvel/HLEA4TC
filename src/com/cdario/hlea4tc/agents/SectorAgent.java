@@ -1,5 +1,10 @@
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.agents;
 
+import com.cdario.hlea4tc.Util;
+import com.cdario.hlea4tc.protocols.SectorManager;
+import com.cdario.hlea4tc.protocols.SectorProposalInit;
+import com.cdario.hlea4tc.protocols.SectorProposalResp;
+import com.cdario.hlea4tc.protocols.SectorSubscriptionResp;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
@@ -36,7 +41,7 @@ public class SectorAgent extends Agent {
      *
      */
     protected ArrayList<AID> knownSectors;
-    private SectorSubscriptionResp subscriptionResponder;
+    SectorSubscriptionResp subscriptionResponder;
     private SectorProposalInit proposalInitiator;
     private SectorProposalResp proposalResponder;
 
@@ -48,7 +53,8 @@ public class SectorAgent extends Agent {
 
         knownSectors = new ArrayList<AID>();
         System.out.println("[S] " + getLocalName() + "\t + is up and waiting for subscriptions...");
-        
+        setEnabledO2ACommunication(true, AP_MAX);   // permits interactions from Mediator
+
         /*
          *      Register with DF and subscribe to sector-resgistration
          */
@@ -86,7 +92,7 @@ public class SectorAgent extends Agent {
             @Override
             protected void onTick() {
                 ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
-                inform.setContent(timestamp() + " adjust x secs (" + subscriptionResponder.getSubscriptions().size() + ")");
+                inform.setContent(Util.timestamp() + " adjust x secs (" + subscriptionResponder.getSubscriptions().size() + ")");
                 //TODO: content is junction-specific?
                 subscriptionResponder.notifyJunctions(inform);
             }
@@ -101,11 +107,8 @@ public class SectorAgent extends Agent {
 
 }
 
-String timestamp() {
-        StringBuilder sb = new StringBuilder();
-        Formatter format = new Formatter(sb, Locale.ENGLISH);
-        format.format("%tT ", Calendar.getInstance());
-        return sb.toString();
+    public ArrayList<AID> getKnownSectors() {
+        return knownSectors;
     }
 
 }

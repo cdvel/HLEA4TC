@@ -1,9 +1,6 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-package com.cdario.hlea4tc;
+package com.cdario.hlea4tc.protocols;
 
+import com.cdario.hlea4tc.agents.SectorAgent;
 import jade.core.AID;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
@@ -12,13 +9,13 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 
-class SectorProposalInit extends ProposeInitiator {
+public class SectorProposalInit extends ProposeInitiator {
 
     ArrayList<AID> knownSectors;
     
     public SectorProposalInit(SectorAgent a, ACLMessage msg) {
         super(a, msg);
-        knownSectors =  a.knownSectors;
+        knownSectors =  a.getKnownSectors();
     }
 
     /*
