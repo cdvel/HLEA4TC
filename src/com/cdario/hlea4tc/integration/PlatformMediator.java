@@ -25,8 +25,10 @@ public class PlatformMediator {
     
     private static final int defaultPort = 1200;
     private static final String junctionPrefix = "J-";
+    private static final String sectorPrefix = "S-";
     
     static ArrayList<AgentController> jControllers = new ArrayList<AgentController>();
+    static ArrayList<AgentController> sControllers = new ArrayList<AgentController>();
     //private static AgentController rma = null;
     static ArrayList<JunctionAgent> junctions = new ArrayList<JunctionAgent>();
 
@@ -63,9 +65,12 @@ public class PlatformMediator {
            
             String[] junxs = junctions.split("\\s+"); //CREATE AGENTS:
             jControllers.clear();
+            sControllers.clear();
             for (String junx : junxs) {
                 initJunctionAgent(junx);
             }
+            
+            initSectorAgent("101");
             
         }catch(StaleProxyException ex)
         {
@@ -94,20 +99,42 @@ public class PlatformMediator {
         }
         return false;
     }
-    
-    /**
-     * new value for the existing junction
-     * @param id  junction identifier
-     * @param value 
-     * @return 
+
+        /**
+     * Add sector to default container
+     * @param id new sector identifier
+     * @return success or failure
      */
-    public static boolean updJunctionAgent(int id, double value)
+    public static boolean initSectorAgent(String id)
     {
         if (container != null)
         {
             try {
-                AgentController tAgent = container.getAgent(junctionPrefix+id, true);  // TODO: untested, get by GUID instead of local name
-                tAgent.putO2AObject(new JunctionUpdateBean(id, value, Util.timestamp()), AgentController.ASYNC); // TODO: check for SYNC version!
+                AgentController sec = container.createNewAgent(sectorPrefix + id, "com.cdario.hlea4tc.agents.SectorAgent", new Object[0]);
+                sec.start();
+                sControllers.add(sec);
+                return true;
+            } catch (StaleProxyException ex) {
+                Logger.getLogger(PlatformMediator.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return false;
+    }
+    
+    
+    /**
+     * new value for the existing junction
+     * @param junctionID  junction identifier
+     * @param value 
+     * @return 
+     */
+    public static boolean updJunctionAgent(int junctionID, double value)
+    {
+        if (container != null)
+        {
+            try {
+                AgentController tAgent = container.getAgent(junctionPrefix+junctionID, true);  // TODO: untested, get by GUID instead of local name
+                tAgent.putO2AObject(new JunctionUpdateBean(junctionID, value, Util.timestamp()), AgentController.ASYNC); // TODO: check for SYNC version!
                 return true;
             } catch (StaleProxyException ex) {
                 Logger.getLogger(PlatformMediator.class.getName()).log(Level.SEVERE, null, ex);
@@ -117,21 +144,4 @@ public class PlatformMediator {
         }
         return false;
     }
-
-    
-    //public static void main(String[] args) {
-        
-        //  1. start JADE platform, get container details etc
-        
-        //  2. 
-       
-        //controller = new ControllerNativeInterface();
-        //addJunction(controller.getNewJunctionFromSimulation());
-        
-    //}
-    
-    private static void addJunction(JunctionAgent newJunction) {
-        junctions.add(newJunction);
-    }
-    
 }

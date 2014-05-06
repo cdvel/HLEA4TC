@@ -28,26 +28,15 @@ import java.util.Locale;
  */
 public class SectorAgent extends Agent {
 
-    /**
-     *
-     */
-    protected int sectorID;
-    /**
-     *
-     */
+    protected String sectorID;
     protected AID[] myJunctions;
     //protected AID[] knownSectors;
-    /**
-     *
-     */
+    
     protected ArrayList<AID> knownSectors;
     SectorSubscriptionResp subscriptionResponder;
     private SectorProposalInit proposalInitiator;
     private SectorProposalResp proposalResponder;
 
-    /**
-     *
-     */
     @Override
     protected void setup() {
 
