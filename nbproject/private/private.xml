@@ -2,7 +2,7 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="1">
         <file>
-            <url>src/com/cdario/hlea4tc/SectorAgent.java</url>
+            <url>src/co.velandia/hlea4tc/SectorAgent.java</url>
             <bookmark id="1">
                 <name/>
                 <line>76</line>
@@ -12,17 +12,17 @@
     </editor-bookmarks>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/protocols/SectorProposalInit.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/protocols/SectorManager.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/agents/JunctionAgent.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/protocols/JunctionSubscriptionInit.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/integration/EnvironmentController.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/agents/JunctionUpdateBean.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/integration/ControllerNativeInterface.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/protocols/SectorSubscriptionResp.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/protocols/SectorProposalResp.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/integration/PlatformMediator.java</file>
-            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/com/cdario/hlea4tc/agents/SectorAgent.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/protocols/SectorProposalInit.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/protocols/SectorManager.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/agents/JunctionAgent.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/protocols/JunctionSubscriptionInit.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/integration/EnvironmentController.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/agents/JunctionUpdateBean.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/integration/ControllerNativeInterface.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/protocols/SectorSubscriptionResp.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/protocols/SectorProposalResp.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/integration/PlatformMediator.java</file>
+            <file>file:/C:/Users/cesar/Dropbox/CODE/HLEA4TC/src/co.velandia/hlea4tc/agents/SectorAgent.java</file>
         </group>
     </open-files>
 </project-private>
