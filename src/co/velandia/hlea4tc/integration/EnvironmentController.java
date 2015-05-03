@@ -1,4 +1,4 @@
-package com.cdario.hlea4tc.integration;
+package co.velandia.hlea4tc.integration;
 
 import jade.core.Profile;
 import jade.core.ProfileImpl;
@@ -21,7 +21,7 @@ public class EnvironmentController {
         if (cc != null){
             try {
                 // create and run!
-                AgentController jcontroller = cc.createNewAgent(name, "com.cdario.hlea4tc.JunctionAgent", null);
+                AgentController jcontroller = cc.createNewAgent(name, "co.velandia.hlea4tc.JunctionAgent", null);
                 jcontroller.start();
                 return  jcontroller;
                 

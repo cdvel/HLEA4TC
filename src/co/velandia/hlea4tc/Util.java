@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package com.cdario.hlea4tc;
+package co.velandia.hlea4tc;
 
 import java.util.Calendar;
 import java.util.Formatter;

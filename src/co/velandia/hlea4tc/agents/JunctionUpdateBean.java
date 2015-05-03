@@ -1,15 +1,25 @@
-package com.cdario.hlea4tc.agents;
+package co.velandia.hlea4tc.agents;
+
+import java.util.ArrayList;
 
 public class JunctionUpdateBean {
 
-    private int junctionID;
+    public int junctionID;
+
+    public int coordination;   //0: E-W; 1: N-S
+    public int priority ;
+    public boolean activeMediation;
+    public ArrayList incomingCounts;
+    public ArrayList goodList;
+    public ArrayList agentView ;
+    
+    
+    
     private double value;
     private String timestamp;
 
-    public JunctionUpdateBean(int junctionID, double value, String timestamp) {
+    public JunctionUpdateBean(int junctionID) {
         this.junctionID = junctionID;
-        this.value = value;
-        this.timestamp = timestamp;
     }
     
     public int getJunctionID() {

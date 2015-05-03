@@ -1,8 +1,8 @@
-package com.cdario.hlea4tc.integration;
+package co.velandia.hlea4tc.integration;
 
-import com.cdario.hlea4tc.Util;
-import com.cdario.hlea4tc.agents.JunctionAgent;
-import com.cdario.hlea4tc.agents.JunctionUpdateBean;
+import co.velandia.hlea4tc.Util;
+import co.velandia.hlea4tc.agents.JunctionAgent;
+import co.velandia.hlea4tc.agents.JunctionUpdateBean;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.wrapper.AgentController;
@@ -22,6 +22,9 @@ public class PlatformMediator {
     
     private static ContainerController container = null;
     private static ContainerController mainContainer = null;
+    
+    private static JunctionUpdateBean junctionBean;
+    
     
     private static final int defaultPort = 1200;
     private static final String junctionPrefix = "J-";
@@ -67,10 +70,15 @@ public class PlatformMediator {
             jControllers.clear();
             sControllers.clear();
             for (String junx : junxs) {
-                initJunctionAgent(junx);
+                if(!junx.isEmpty() &&  junx.compareTo(" ")!= 0)
+                    initJunctionAgent(junx);
             }
             
-            initSectorAgent("101");
+            
+//            
+//            initSectorAgent("101");
+//            initSectorAgent("202");
+//            initSectorAgent("303");
             
         }catch(StaleProxyException ex)
         {
@@ -89,7 +97,7 @@ public class PlatformMediator {
         if (container != null)
         {
             try {
-                AgentController jun = container.createNewAgent(junctionPrefix + id, "com.cdario.hlea4tc.agents.JunctionAgent", new Object[0]);
+                AgentController jun = container.createNewAgent(junctionPrefix + id, "co.velandia.hlea4tc.agents.JunctionAgent", new Object[0]);
                 jun.start();
                 jControllers.add(jun);
                 return true;
@@ -110,7 +118,7 @@ public class PlatformMediator {
         if (container != null)
         {
             try {
-                AgentController sec = container.createNewAgent(sectorPrefix + id, "com.cdario.hlea4tc.agents.SectorAgent", new Object[0]);
+                AgentController sec = container.createNewAgent(sectorPrefix + id, "co.velandia.hlea4tc.agents.SectorAgent", new Object[0]);
                 sec.start();
                 sControllers.add(sec);
                 return true;
@@ -122,26 +130,97 @@ public class PlatformMediator {
     }
     
     
-    /**
-     * new value for the existing junction
-     * @param junctionID  junction identifier
-     * @param value 
-     * @return 
-     */
-    public static boolean updJunctionAgent(int junctionID, double value)
+   /**
+    * 
+    * @param values
+    * @return 
+    */
+    public static String updJunctionAgent(String values)
     {
         if (container != null)
         {
             try {
+                String[] junxs = values.split("\\s+"); //CREATE AGENTS:
+                int junctionID = Integer.parseInt(junxs[0]);
+                //int value =  Integer.parseInt(junxs[1]);
                 AgentController tAgent = container.getAgent(junctionPrefix+junctionID, true);  // TODO: untested, get by GUID instead of local name
-                tAgent.putO2AObject(new JunctionUpdateBean(junctionID, value, Util.timestamp()), AgentController.ASYNC); // TODO: check for SYNC version!
-                return true;
+                tAgent.putO2AObject(new JunctionUpdateBean(junctionID),  AgentController.ASYNC); // TODO: check for SYNC version!
+                return "101";
             } catch (StaleProxyException ex) {
                 Logger.getLogger(PlatformMediator.class.getName()).log(Level.SEVERE, null, ex);
             } catch (ControllerException ecx) {
                 Logger.getLogger(PlatformMediator.class.getName()).log(Level.SEVERE, null, ecx);
             }
         }
-        return false;
+        return "";
     }
+    
+       /**
+    * 
+     * @param junctions
+     * @param incoming
+    * @return 
+    */
+    public static String OptAPOinitialise(String junctions, String incoming)
+    {
+        if (container != null)
+        {
+            try {
+                String[] junxs = junctions.split("\\s+"); //CREATE AGENTS:
+                String[] counts = incoming.split("\\s+"); //CREATE AGENTS:
+                int junctionID = Integer.parseInt(junxs[0]);    //[o,n,s,e,w]
+                AgentController tAgent = container.getAgent(junctionPrefix+junctionID, true);  // TODO: untested, get by GUID instead of local name
+                JunctionUpdateBean junctBean = new JunctionUpdateBean(junctionID);
+                junctBean.goodList = new ArrayList(5);
+                junctBean.agentView = new ArrayList(4);
+                junctBean.incomingCounts = new ArrayList(4);
+                junctBean.goodList.add(junctionID);
+
+                int prio = 0;
+
+                for (int i=1;i < 5; i++) {
+                    junctBean.goodList.add(Integer.parseInt(junxs[i]));
+                    junctBean.agentView.add(Integer.parseInt(junxs[i]));
+                    int count = Integer.parseInt(counts[i]);
+                    junctBean.incomingCounts.add(count);
+                    prio +=count;
+                }
+                
+                junctBean.priority = prio;
+                junctBean.coordination = (int)(Math.random() * 1); 
+                junctBean.activeMediation = true;
+                
+                tAgent.putO2AObject(junctBean, AgentController.ASYNC); // TODO: check for SYNC version!
+                return "101";
+            } catch (StaleProxyException ex) {
+                Logger.getLogger(PlatformMediator.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ControllerException ecx) {
+                Logger.getLogger(PlatformMediator.class.getName()).log(Level.SEVERE, null, ecx);
+            }
+        }
+        return "";
+    }
+    
+    
+    public static String OptAPOcheckAgentView(String junctionID) throws ControllerException
+    {
+        if (container != null)
+        {
+            
+            // calculate current cost F within subgraph goodList
+            //[n,s,e,w]
+            AgentController tAgent = container.getAgent(junctionPrefix+junctionID, true); 
+            
+            JunctionAgent junction = (JunctionAgent)tAgent;        // TODO: invalid cast; alt 
+            
+            junctionBean.coordination = 
+            
+            junction.myState.junctionID;
+            
+            
+        }     
+        return null;
+       
+    }
+    
 }

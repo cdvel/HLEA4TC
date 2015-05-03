@@ -1,7 +1,7 @@
-package com.cdario.hlea4tc.integration;
+package co.velandia.hlea4tc.integration;
 
-import com.cdario.hlea4tc.agents.JunctionAgent;
-import com.cdario.hlea4tc.integration.EnvironmentController;
+import co.velandia.hlea4tc.agents.JunctionAgent;
+import co.velandia.hlea4tc.integration.EnvironmentController;
 
 public class ControllerNativeInterface {
     
