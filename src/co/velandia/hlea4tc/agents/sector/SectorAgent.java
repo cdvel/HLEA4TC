@@ -1,10 +1,10 @@
-package co.velandia.hlea4tc.agents;
+package co.velandia.hlea4tc.agents.sector;
 
-import co.velandia.hlea4tc.Util;
-import co.velandia.hlea4tc.protocols.SectorManager;
-import co.velandia.hlea4tc.protocols.SectorProposalInit;
-import co.velandia.hlea4tc.protocols.SectorProposalResp;
-import co.velandia.hlea4tc.protocols.SectorSubscriptionResp;
+import co.velandia.hlea4tc.common.Util;
+import co.velandia.hlea4tc.communication.protocols.coordination.SectorManager;
+import co.velandia.hlea4tc.communication.protocols.negotiation.SectorProposalInit;
+import co.velandia.hlea4tc.communication.protocols.negotiation.SectorProposalResp;
+import co.velandia.hlea4tc.communication.protocols.subscription.SectorSubscriptionResp;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
@@ -20,7 +20,7 @@ import java.util.Formatter;
 import java.util.Locale;
 
 /*
- * Implements the responder role in FIPA-Subscribe IP. 
+ * Implements the responder role in FIPA-Subscribe IP.
  */
 /**
  *
@@ -31,7 +31,7 @@ public class SectorAgent extends Agent {
     protected String sectorID;
     protected AID[] myJunctions;
     //protected AID[] knownSectors;
-    
+
     protected ArrayList<AID> knownSectors;
     SectorSubscriptionResp subscriptionResponder;
     private SectorProposalInit proposalInitiator;
@@ -39,10 +39,13 @@ public class SectorAgent extends Agent {
 
     @Override
     protected void setup() {
-
         knownSectors = new ArrayList<AID>();
-        System.out.println("[S] " + getLocalName() + "\t + is up and waiting for subscriptions...");
-        setEnabledO2ACommunication(true, AP_MAX);   // permits interactions from Mediator
+        System.out.println(
+            "[S] " +
+            getLocalName() +
+            "\t + is up and waiting for subscriptions..."
+        );
+        setEnabledO2ACommunication(true, AP_MAX); // permits interactions from Mediator
 
         /*
          *      Register with DF and subscribe to sector-resgistration
@@ -53,51 +56,66 @@ public class SectorAgent extends Agent {
         sdd.setName("sector-registration");
         sdd.setType("DF-Subscriptions");
         description.addServices(sdd);
-        
+
         // subscribe to new sectors dynamically
-        SectorManager sectorUpdater = new SectorManager(this, DFService.createSubscriptionMessage(this, getDefaultDF(), description, null), knownSectors);
+        SectorManager sectorUpdater = new SectorManager(
+            this,
+            DFService.createSubscriptionMessage(
+                this,
+                getDefaultDF(),
+                description,
+                null
+            ),
+            knownSectors
+        );
         addBehaviour(sectorUpdater);
-        
+
         // and register itself to the DF
         try {
-            DFService.register(this, description); 
+            DFService.register(this, description);
         } catch (Exception fe) {
             fe.printStackTrace();
         }
 
-
         //SubscriptionResponder.SubscriptionManager manager = new SubscriptionResponder(this, null).
         subscriptionResponder = new SectorSubscriptionResp(this);
-        proposalInitiator = new SectorProposalInit(this, null);  // msg is null; prepareInitiations() specifies initiator message 
+        proposalInitiator = new SectorProposalInit(this, null); // msg is null; prepareInitiations() specifies initiator message
         subscriptionResponder.registerHandleSubscription(proposalInitiator);
-    //    proposalInitiator.registerHandleAllResponses(sectorUpdater);
+        //    proposalInitiator.registerHandleAllResponses(sectorUpdater);
         //LOOP?
         //propInitiator.registerHandleAllResponses(sectorUpdater);
         //proposalResponder.registerPrepareResponse(subscriptionResponder);
-        addBehaviour(subscriptionResponder);    // pass handle to proposal behaviour
-        
-        
-        addBehaviour(new TickerBehaviour(this, 5000) {
-            @Override
-            protected void onTick() {
-                ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
-                inform.setContent(Util.timestamp() + " adjust x secs (" + subscriptionResponder.getSubscriptions().size() + ")");
-                //TODO: content is junction-specific?
-                subscriptionResponder.notifyJunctions(inform);
+        addBehaviour(subscriptionResponder); // pass handle to proposal behaviour
+
+        addBehaviour(
+            new TickerBehaviour(this, 5000) {
+                @Override
+                protected void onTick() {
+                    ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
+                    inform.setContent(
+                        Util.timestamp() +
+                        " adjust x secs (" +
+                        subscriptionResponder.getSubscriptions().size() +
+                        ")"
+                    );
+                    //TODO: content is junction-specific?
+                    subscriptionResponder.notifyJunctions(inform);
+                }
             }
-        });
-        
+        );
+
         MessageTemplate proposalRespTemplate = MessageTemplate.and(
-        MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
-        MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_PROPOSE));
-        
+            MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
+            MessageTemplate.MatchProtocol(
+                FIPANames.InteractionProtocol.FIPA_PROPOSE
+            )
+        );
+
         proposalResponder = new SectorProposalResp(this, proposalRespTemplate);
         addBehaviour(proposalResponder);
-
-}
+    }
 
     public ArrayList<AID> getKnownSectors() {
         return knownSectors;
     }
-
 }
