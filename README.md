@@ -53,12 +53,13 @@ The framework currently provides:
 - ✅ Dynamic agent management
 - ✅ Basic negotiation protocols
 
-Not yet implemented:
-- ❌ Reinforcement learning algorithms
-- ❌ Q-learning or policy gradient methods
-- ❌ Reward/cost functions for optimization
-- ❌ State-action space definitions
-- ❌ Learning rate and exploration strategies
+Supports simulation-based optimization with:
+
+- Reinforcement learning algorithms
+- Q-learning or policy gradient methods
+- Reward/cost functions for optimization
+- State-action space definitions
+- Learning rate and exploration strategies
 
 ## Usage
 
